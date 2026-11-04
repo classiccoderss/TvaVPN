@@ -308,6 +308,12 @@ data class ConnectionProfile(
      * handshake without it stops looking like Chrome's.
      */
     val disableGrease: Boolean = false,
+    /**
+     * Core 2.3.0: verify the engine's TLS connections against the system trust
+     * store (engine `--tls-verify`). Off by default, matching the engine's own
+     * default and every profile saved before this field existed.
+     */
+    val tlsVerify: Boolean = false,
     /** Endpoint validation window, seconds; 0 = engine default. */
     val validateSecs: Int = 0,
     /** Delay between engine-level reconnects, seconds; 0 = engine default. */
@@ -792,6 +798,7 @@ data class ConnectionProfile(
         // engine default, so an untouched profile launches exactly as before.
         sanitizedTlsCiphers()?.let { args += "--tls-ciphers"; args += it }
         if (disableGrease) args += "--disable-grease"
+        if (tlsVerify) args += "--tls-verify"
         if (validateSecs > 0) { args += "--validate-secs"; args += validateSecs.coerceIn(1, 3600).toString() }
         if (reconnectSecs > 0) { args += "--reconnect-secs"; args += reconnectSecs.coerceIn(1, 600).toString() }
         if (noProfileRetry) args += "--no-profile-retry"
@@ -885,6 +892,7 @@ data class ConnectionProfile(
         sanitizedTlsGroups()?.let { put("AETHER_TLS_GROUPS", it) }
         sanitizedTlsCiphers()?.let { put("AETHER_TLS_CIPHERS", it) }
         if (disableGrease) put("AETHER_DISABLE_GREASE", "1")
+        if (tlsVerify) put("AETHER_TLS_VERIFY", "1")
         if (coreLogLevel != CoreLogLevel.WARN) put("AETHER_LOG_LEVEL", coreLogLevel.raw)
 
         // ---- engine core 2.0.0 (1.3.0): Tor tuning ----
