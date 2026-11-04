@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Single colour for themed icons: the T is a hole in the shield. -->
+    <group android:scaleX="0.62" android:scaleY="0.62" android:pivotX="54" android:pivotY="54">
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M54,20L82,31L82,52L76,66L66,77L54,86L42,77L32,66L26,52L26,31ZM40,36L68,36L68,44L58,44L58,72L50,72L50,44L40,44Z" />
+    </group>
+</vector>

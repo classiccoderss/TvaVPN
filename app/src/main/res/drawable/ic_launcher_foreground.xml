@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- tvaVPN mark: a shield with a T -->
+    <group android:scaleX="0.62" android:scaleY="0.62" android:pivotX="54" android:pivotY="54">
+        <path
+            android:fillColor="#4C8DFF"
+            android:pathData="M54,20L82,31L82,52L76,66L66,77L54,86L42,77L32,66L26,52L26,31Z" />
+        <path
+            android:fillColor="#32E0C4"
+            android:pathData="M40,36L68,36L68,44L58,44L58,72L50,72L50,44L40,44Z" />
+    </group>
+</vector>
