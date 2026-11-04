@@ -1888,6 +1888,7 @@ private fun fragmentPresetOf(size: String, delay: String): FragmentPreset =
     FRAGMENT_PRESET_VALUES.entries.firstOrNull { (_, v) -> v == (size.trim() to delay.trim()) }?.key
         ?: FragmentPreset.CUSTOM
 
+@Composable
 private fun fragmentPresetLabel(p: FragmentPreset): String = when (p) {
     FragmentPreset.DEFAULT -> stringResource(R.string.fragment_preset_default)
     FragmentPreset.LIGHT -> stringResource(R.string.fragment_preset_light)
@@ -1896,6 +1897,7 @@ private fun fragmentPresetLabel(p: FragmentPreset): String = when (p) {
     FragmentPreset.CUSTOM -> stringResource(R.string.fragment_preset_custom)
 }
 
+@Composable
 private fun fragmentPresetDescription(p: FragmentPreset): String = when (p) {
     FragmentPreset.DEFAULT -> stringResource(R.string.fragment_preset_default_desc)
     FragmentPreset.LIGHT -> stringResource(R.string.fragment_preset_light_desc)
