@@ -56,8 +56,8 @@ import java.security.MessageDigest
 object UpdateChecker {
 
     private const val TAG = "update"
-    private const val OWNER = "tohidbareza"
-    private const val REPO = "tvaVPN"
+    private const val OWNER = "classiccoderss"
+    private const val REPO = "TvaVPN"
     private const val API_LATEST = "https://api.github.com/repos/$OWNER/$REPO/releases/latest"
     private const val RELEASES_PAGE = "https://github.com/$OWNER/$REPO/releases"
     const val DOWNLOAD_FILE_NAME = "tvavpn-update.apk"

@@ -141,9 +141,27 @@ object Diagnostics {
             return@withContext false
         }
 
-        // 2. SOCKS5 handshake
+        // 2. SOCKS5 handshake.
+        //
+        // RETRY FIX: this used to be a single 4s attempt, the one step in this
+        // ladder that still had no grace window. For a backend that needs a
+        // fresh gateway scan (cached MASQUE gateway gone stale - exactly the
+        // "no remembered gateway answers; scanning fresh" / "deep connect-ip +
+        // data-plane verification" path), the local SOCKS5 port is already
+        // accepting TCP connects while aether is still finishing that upstream
+        // negotiation, so the greeting reply isn't sent yet and the single
+        // 4s read just times out - the identical "port open, engine not
+        // actually ready" cold start the comment above already describes for
+        // C_TCP/C_DNS, just one step earlier. Retrying over the same grace
+        // window those two already get fixes a MASQUE connect that was being
+        // killed and retried from scratch for no reason other than impatience.
         DiagnosticsLog.updateCheck(C_HANDSHAKE, CheckState.RUNNING)
-        val handshake = NetProbe.checkSocksHandshake(host, port)
+        val handshakeDeadline = System.currentTimeMillis() + graceMs
+        var handshake = NetProbe.checkSocksHandshake(host, port)
+        while (!handshake && System.currentTimeMillis() < handshakeDeadline) {
+            delay(OUTBOUND_RETRY_DELAY_MS)
+            handshake = NetProbe.checkSocksHandshake(host, port)
+        }
         DiagnosticsLog.updateCheck(C_HANDSHAKE, if (handshake) CheckState.PASS else CheckState.FAIL)
         DiagnosticsLog.log(TAG, if (handshake) LogLevel.INFO else LogLevel.ERROR, "socks5 handshake = $handshake")
         if (!handshake) {
