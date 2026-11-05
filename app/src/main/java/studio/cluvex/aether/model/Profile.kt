@@ -309,13 +309,9 @@ data class ConnectionProfile(
      */
     val disableGrease: Boolean = false,
     /**
-     * `--tls-verify` (engine core 2.4.0, 1.9.0): verifies the WARP gateway's TLS
-     * certificate instead of trusting it on connection, the way a browser does. Off
-     * by default because Cloudflare's own WARP certificates were never meant to be
-     * checked against a public CA the way a normal HTTPS site's is, and turning this
-     * on against an endpoint that is not set up for it is a reason connects fail, not
-     * a safety net - it is here for whoever runs their own gateway and wants it
-     * actually checked.
+     * Core 2.3.0: verify the engine's TLS connections against the system trust
+     * store (engine `--tls-verify`). Off by default, matching the engine's own
+     * default and every profile saved before this field existed.
      */
     val tlsVerify: Boolean = false,
     /** Endpoint validation window, seconds; 0 = engine default. */

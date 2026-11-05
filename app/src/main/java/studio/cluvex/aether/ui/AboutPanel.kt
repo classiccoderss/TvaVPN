@@ -21,21 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.text.font.FontFamily
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import studio.cluvex.aether.core.ChangelogFetcher
-import studio.cluvex.aether.data.LanguagePrefs
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -60,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import studio.cluvex.aether.BuildConfig
 import studio.cluvex.aether.R
 
-private const val URL_OWN_GITHUB = "https://github.com/tohidbareza"
+private const val URL_OWN_GITHUB = "https://github.com/classiccoderss"
 private const val TELEGRAM_APP_URI = "tg://resolve?domain=ClassicDevs"
 private const val TELEGRAM_WEB_URL = "https://t.me/ClassicDevs"
 
@@ -73,14 +58,11 @@ fun AboutPanel(modifier: Modifier = Modifier, startExpanded: Boolean = false) {
     var expanded by remember { mutableStateOf(startExpanded) }
     val arrowRotation by animateFloatAsState(if (expanded) 180f else 0f, tween(300), label = "aboutArrow")
     val context = LocalContext.current
-    var showChangelog by remember { mutableStateOf(false) }
     val versionName = remember {
         runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         }.getOrNull() ?: "1.1.0"
     }
-
-    if (showChangelog) ChangelogDialog { showChangelog = false }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -168,115 +150,19 @@ fun AboutPanel(modifier: Modifier = Modifier, startExpanded: Boolean = false) {
                     )
 
                     Spacer(Modifier.height(8.dp))
-                    ChangelogRow { showChangelog = true }
-                    Spacer(Modifier.height(8.dp))
 
-                    // ---- This edition (tohidbareza) ----
+                    // ---- This edition (classic coders) ----
                     SectionHeader(
                         title = stringResource(R.string.about_own_title),
                         note = stringResource(R.string.about_own_note),
                     )
-                    LinkRow(R.drawable.ic_github, "github.com/tohidbareza", URL_OWN_GITHUB)
+                    LinkRow(R.drawable.ic_github, "github.com/classiccoderss", URL_OWN_GITHUB)
                     Spacer(Modifier.height(10.dp))
                     TelegramButton()
                 }
             }
         }
     }
-}
-
-/** About > Changelog: opens the list of changed files (paths only). */
-@Composable
-private fun ChangelogRow(onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.History,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.about_changelog),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = stringResource(R.string.about_changelog_desc),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-/** Changed files per version, read from CHANGELOG.md on GitHub. Paths only, no release notes. */
-@Composable
-private fun ChangelogDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
-    // null = loading, Failed = fetch failed.
-    var entries by remember { mutableStateOf<List<ChangelogFetcher.Entry>?>(null) }
-    var failed by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        val persian = LanguagePrefs.isPersian(context)
-        val all = withContext(Dispatchers.IO) { ChangelogFetcher.fetch(persian) }
-        if (all == null) failed = true else entries = all.filter { it.files.isNotEmpty() }
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.changelog_dialog_title)) },
-        text = {
-            Column(
-                Modifier
-                    .heightIn(max = 380.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                val list = entries
-                when {
-                    failed -> Text(stringResource(R.string.update_changes_unavailable))
-                    list == null -> Text(stringResource(R.string.update_changes_loading))
-                    list.isEmpty() -> Text(stringResource(R.string.changelog_no_files))
-                    else -> list.forEach { e ->
-                        Text(
-                            e.heading,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        // File paths are always left-to-right, even in the Persian UI.
-                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                e.files.forEach { path ->
-                                    Text(
-                                        path,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontFamily = FontFamily.Monospace,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.changelog_close)) }
-        },
-        dismissButton = {
-            TextButton(onClick = { runCatching { uriHandler.openUri(ChangelogFetcher.CHANGELOG_PAGE_URL) } }) {
-                Text(stringResource(R.string.update_changes_full))
-            }
-        },
-    )
 }
 
 @Composable

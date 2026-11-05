@@ -126,6 +126,7 @@ internal fun CustomConfigsPage(
     val testingAll by ConfigPingStore.testingAll.collectAsState()
 
     var busy by remember { mutableStateOf(false) }
+    var importMenuOpen by remember { mutableStateOf(false) }
     var pasteOpen by remember { mutableStateOf(false) }
     var pending by remember { mutableStateOf<PendingImport?>(null) }
     var actionsFor by remember { mutableStateOf<CustomConfig?>(null) }
@@ -134,7 +135,6 @@ internal fun CustomConfigsPage(
     var deleting by remember { mutableStateOf<CustomConfig?>(null) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
     val subs by SubscriptionStore.subscriptions.collectAsState()
-    var addSubOpen by remember { mutableStateOf(false) }
     var refreshingSubs by remember { mutableStateOf(false) }
     var removingSub by remember { mutableStateOf<Subscription?>(null) }
 
@@ -160,6 +160,26 @@ internal fun CustomConfigsPage(
                 toast(String.format(failedMsg, e.message ?: e.javaClass.simpleName))
             } finally {
                 busy = false
+            }
+        }
+    }
+
+    // A bare link - nothing else pasted alongside it - is treated as a
+    // subscription instead of a one-off import: same rule ConfigImporter
+    // already uses to decide whether to download pasted text at all, just
+    // acted on here instead of being thrown away after one fetch. This is
+    // what replaced the separate "Add a subscription" dialog: pasting the
+    // link IS adding the subscription now, auto-detected, nothing else to fill in.
+    fun addSubscriptionFromLink(url: String) {
+        busy = true
+        refreshingSubs = true
+        val sub = SubscriptionStore.add(context, "", url)
+        scope.launch {
+            try {
+                SubscriptionStore.refresh(context, sub)
+            } finally {
+                busy = false
+                refreshingSubs = false
             }
         }
     }
@@ -251,49 +271,17 @@ internal fun CustomConfigsPage(
         settingsSection {
             GroupCaption(stringResource(R.string.cc_group_import))
             SettingsGroup {
+                // One entry point instead of a row per method: tapping it opens
+                // the method picker below (link/text, file, camera, image). A
+                // bare link pasted there is auto-detected and added as a
+                // subscription - see addSubscriptionFromLink - so there is no
+                // separate "add a subscription" step anymore either.
                 SettingsActionRow(
-                    title = stringResource(R.string.cc_import_paste),
-                    summary = stringResource(R.string.cc_import_paste_desc),
-                    icon = Icons.Rounded.Link,
+                    title = stringResource(R.string.cc_import_title),
+                    summary = stringResource(R.string.cc_import_desc),
+                    icon = Icons.Rounded.Add,
                     enabled = !busy,
-                    onClick = { pasteOpen = true },
-                )
-                RowDivider()
-                SettingsActionRow(
-                    title = stringResource(R.string.cc_import_file),
-                    summary = stringResource(R.string.cc_import_file_desc),
-                    icon = Icons.Rounded.FileOpen,
-                    enabled = !busy,
-                    onClick = { runCatching { pickFile.launch(arrayOf("*/*")) } },
-                )
-                RowDivider()
-                SettingsActionRow(
-                    title = stringResource(R.string.cc_import_camera),
-                    summary = stringResource(R.string.cc_import_camera_desc),
-                    icon = Icons.Rounded.QrCodeScanner,
-                    enabled = !busy,
-                    onClick = {
-                        runCatching {
-                            scanQr.launch(
-                                ScanOptions()
-                                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                    .setPrompt(scanPrompt)
-                                    .setBeepEnabled(false)
-                                    // Portrait only: the stock capture screen is
-                                    // landscape and rotated with the sensor.
-                                    .setOrientationLocked(true)
-                                    .setCaptureActivity(PortraitCaptureActivity::class.java),
-                            )
-                        }
-                    },
-                )
-                RowDivider()
-                SettingsActionRow(
-                    title = stringResource(R.string.cc_import_image),
-                    summary = stringResource(R.string.cc_import_image_desc),
-                    icon = Icons.Rounded.Image,
-                    enabled = !busy,
-                    onClick = { runCatching { pickImage.launch("image/*") } },
+                    onClick = { importMenuOpen = true },
                 )
             }
         }
@@ -326,14 +314,6 @@ internal fun CustomConfigsPage(
                         )
                     }
                 }
-                RowDivider()
-                SettingsActionRow(
-                    title = stringResource(R.string.cc_sub_add),
-                    summary = stringResource(R.string.cc_sub_add_desc),
-                    icon = Icons.Rounded.Add,
-                    enabled = editable && !busy,
-                    onClick = { addSubOpen = true },
-                )
                 if (subs.isNotEmpty()) {
                     RowDivider()
                     SettingsActionRow(
@@ -462,8 +442,19 @@ internal fun CustomConfigsPage(
                     enabled = text.isNotBlank(),
                     onClick = {
                         pasteOpen = false
-                        val input = text
-                        runImport { p -> ConfigImporter.fromText(context, input, ConfigSource.LINK, p) }
+                        val input = ConfigParser.cleanInput(text)
+                        // Same single-line-URL rule ConfigImporter.fromText already
+                        // uses to decide whether to download the paste at all - a
+                        // bare link gets treated as a subscription (added, then
+                        // refreshed) instead of a one-off import.
+                        val isLink = input.lines().size == 1 &&
+                            (input.startsWith("https://", ignoreCase = true) ||
+                                input.startsWith("http://", ignoreCase = true))
+                        if (isLink) {
+                            addSubscriptionFromLink(input)
+                        } else {
+                            runImport { p -> ConfigImporter.fromText(context, input, ConfigSource.LINK, p) }
+                        }
                     },
                 ) { Text(stringResource(R.string.cc_import_action)) }
             },
@@ -676,50 +667,60 @@ internal fun CustomConfigsPage(
         )
     }
 
-    if (addSubOpen) {
-        var name by remember { mutableStateOf("") }
-        var url by remember { mutableStateOf("") }
+    if (importMenuOpen) {
         AlertDialog(
-            onDismissRequest = { addSubOpen = false },
-            title = { Text(stringResource(R.string.cc_sub_add)) },
+            onDismissRequest = { importMenuOpen = false },
+            title = { Text(stringResource(R.string.cc_import_title)) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it.take(80) },
-                        singleLine = true,
-                        label = { Text(stringResource(R.string.cc_sub_name)) },
-                        modifier = Modifier.fillMaxWidth(),
+                Column {
+                    ImportMethodRow(
+                        icon = Icons.Rounded.Link,
+                        title = stringResource(R.string.cc_import_paste),
+                        summary = stringResource(R.string.cc_import_paste_desc),
+                        onClick = { importMenuOpen = false; pasteOpen = true },
                     )
-                    LtrOutlinedTextField(
-                        value = url,
-                        onValueChange = { url = it.trim() },
-                        singleLine = true,
-                        label = { Text(stringResource(R.string.cc_sub_url)) },
-                        placeholder = { Text("https://...") },
-                        modifier = Modifier.fillMaxWidth(),
+                    ImportMethodRow(
+                        icon = Icons.Rounded.FileOpen,
+                        title = stringResource(R.string.cc_import_file),
+                        summary = stringResource(R.string.cc_import_file_desc),
+                        onClick = {
+                            importMenuOpen = false
+                            runCatching { pickFile.launch(arrayOf("*/*")) }
+                        },
+                    )
+                    ImportMethodRow(
+                        icon = Icons.Rounded.QrCodeScanner,
+                        title = stringResource(R.string.cc_import_camera),
+                        summary = stringResource(R.string.cc_import_camera_desc),
+                        onClick = {
+                            importMenuOpen = false
+                            runCatching {
+                                scanQr.launch(
+                                    ScanOptions()
+                                        .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                        .setPrompt(scanPrompt)
+                                        .setBeepEnabled(false)
+                                        // Portrait only: the stock capture screen is
+                                        // landscape and rotated with the sensor.
+                                        .setOrientationLocked(true)
+                                        .setCaptureActivity(PortraitCaptureActivity::class.java),
+                                )
+                            }
+                        },
+                    )
+                    ImportMethodRow(
+                        icon = Icons.Rounded.Image,
+                        title = stringResource(R.string.cc_import_image),
+                        summary = stringResource(R.string.cc_import_image_desc),
+                        onClick = {
+                            importMenuOpen = false
+                            runCatching { pickImage.launch("image/*") }
+                        },
                     )
                 }
             },
             confirmButton = {
-                TextButton(
-                    enabled = url.startsWith("http://") || url.startsWith("https://"),
-                    onClick = {
-                        val sub = SubscriptionStore.add(context, name.trim(), url)
-                        addSubOpen = false
-                        refreshingSubs = true
-                        scope.launch {
-                            try {
-                                SubscriptionStore.refresh(context, sub)
-                            } finally {
-                                refreshingSubs = false
-                            }
-                        }
-                    },
-                ) { Text(stringResource(R.string.cc_sub_add_action)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { addSubOpen = false }) { Text(stringResource(R.string.action_cancel)) }
+                TextButton(onClick = { importMenuOpen = false }) { Text(stringResource(R.string.action_cancel)) }
             },
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         )
@@ -915,6 +916,24 @@ private fun ConfigRow(
         }
     }
 }
+/** One row in the import-method picker dialog: icon, title, one-line summary. */
+@Composable
+private fun ImportMethodRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, summary: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+        Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(summary, style = MaterialTheme.typography.bodySmall, color = OnDarkDim)
+        }
+    }
+}
+
 /** One row in the Subscriptions list: its name, last-refresh summary, refresh and remove buttons. */
 @Composable
 private fun SubscriptionRow(

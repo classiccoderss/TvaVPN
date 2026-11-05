@@ -82,7 +82,7 @@
     <string name="about_title">About</string>
     <string name="about_subtitle">Version, links &amp; build info</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_own_title">tvaVPN — tohidbareza</string>
+    <string name="about_own_title">tvaVPN — classic coders</string>
     <string name="about_telegram_button">Open Telegram channel @ClassicDevs</string>
     <string name="about_own_note">This edition of the app</string>
     <string name="menu_open">Open menu</string>
@@ -650,8 +650,6 @@
     <string name="tls_ciphers_help">Leave empty for the recommended default (Chrome’s list, shown above). Otherwise BoringSSL names separated by “:”, e.g. ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256. An unknown name stops the engine at startup.</string>
     <string name="disable_grease_title">Disable GREASE</string>
     <string name="disable_grease_desc">Leave the GREASE values out of the TLS handshake. Off keeps it looking like Chrome’s.</string>
-    <string name="tls_verify_title">Verify gateway certificate</string>
-    <string name="tls_verify_desc">Checks the WARP gateway’s TLS certificate instead of trusting it automatically. Off by default - only turn this on if you run your own gateway set up for it, otherwise connects will fail.</string>
     <string name="tls_group_footer">Applies to MASQUE over HTTP/2, the WARP API calls and the ECH lookup. HTTP/3 (QUIC) offers TLS 1.3 only, so it lists no TLS 1.2 ciphers.</string>
 
     <!-- 1.5.0: custom configs -->
@@ -669,8 +667,10 @@
     <string name="cc_hops_double">Double chain</string>
     <string name="cc_hops_triple">Triple chain</string>
     <string name="cc_group_import">Add a config</string>
+    <string name="cc_import_title">Import</string>
+    <string name="cc_import_desc">Link or text, a file, or a QR code. A link by itself is added and kept refreshed as a subscription automatically.</string>
     <string name="cc_import_paste">Link or text</string>
-    <string name="cc_import_paste_desc">vless, vmess, trojan, ss, socks, wireguard, hysteria2, npvt links, Xray JSON or a subscription URL</string>
+    <string name="cc_import_paste_desc">vless, vmess, trojan, ss, socks, wireguard, hysteria2, npvt links, Xray JSON, or a subscription link - a link by itself is added as a subscription</string>
     <string name="cc_import_file">Import a file</string>
     <string name="cc_import_file_desc">.npvt, .txt, .json or a QR code image</string>
     <string name="cc_import_camera">Scan a QR code</string>
@@ -678,7 +678,7 @@
     <string name="cc_import_image">QR code from an image</string>
     <string name="cc_import_image_desc">A screenshot or a saved picture</string>
     <string name="cc_import_action">Import</string>
-    <string name="cc_paste_hint">Paste one or more links, a JSON config or a subscription URL</string>
+    <string name="cc_paste_hint">Paste a subscription link to add it as a subscription, or one or more config links / a JSON config to import them now</string>
     <string name="cc_paste_clipboard">Paste from clipboard</string>
     <string name="cc_scan_prompt">Point the camera at a config QR code</string>
     <string name="cc_imported">%1$d config(s) added</string>
@@ -792,21 +792,11 @@
     <string name="update_changes_loading">Loading changes…</string>
     <string name="update_changes_unavailable">Could not load the changes.</string>
     <string name="update_changes_full">Open full changelog</string>
-    <string name="about_changelog">Changelog</string>
-    <string name="about_changelog_desc">Changed files and their paths</string>
-    <string name="changelog_dialog_title">Changed files</string>
-    <string name="changelog_no_files">No file list is published for this version.</string>
-    <string name="changelog_close">Close</string>
     <!-- Auto-select & subscriptions (1.8.0) -->
     <string name="cc_auto_select">Auto-select fastest</string>
     <string name="cc_auto_select_desc">After a speed test, switch to the fastest config that answered. If the active one fails to connect, try the next-fastest instead of just showing an error.</string>
     <string name="cc_group_subscriptions">Subscriptions</string>
-    <string name="cc_sub_empty">No subscriptions yet.</string>
-    <string name="cc_sub_add">Add a subscription</string>
-    <string name="cc_sub_add_desc">A link that returns a list of configs, refreshed on its own</string>
-    <string name="cc_sub_add_action">Add</string>
-    <string name="cc_sub_name">Name</string>
-    <string name="cc_sub_url">Subscription URL</string>
+    <string name="cc_sub_empty">No subscriptions yet. Paste a subscription link above to add one.</string>
     <string name="cc_sub_refresh">Refresh</string>
     <string name="cc_sub_refresh_all">Refresh all subscriptions</string>
     <string name="cc_sub_refresh_all_desc">Fetches the latest config list from each one now</string>

@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import studio.cluvex.aether.BuildConfig
 import studio.cluvex.aether.R
 
-private const val OFFICIAL_GITHUB = "https://github.com/tohidbareza"
+private const val OFFICIAL_GITHUB = "https://github.com/classiccoderss"
 
 /**
  * Full-screen blocking error shown when the APK is not signed with the

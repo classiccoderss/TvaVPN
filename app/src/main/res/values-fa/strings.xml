@@ -76,7 +76,7 @@
     <string name="about_title">درباره</string>
     <string name="about_subtitle">نسخه، پیوندها و اطلاعات بیلد</string>
     <string name="about_version">نسخه %1$s</string>
-    <string name="about_own_title">tvaVPN — tohidbareza</string>
+    <string name="about_own_title">tvaVPN — classic coders</string>
     <string name="about_telegram_button">باز کردن کانال تلگرام ⁨@ClassicDevs⁩</string>
     <string name="about_own_note">این نسخه از برنامه</string>
     <string name="menu_open">باز کردن منو</string>
@@ -621,8 +621,6 @@
     <string name="tls_ciphers_help">برای مقدار پیش‌فرض پیشنهادی (فهرست کروم که بالا نمایش داده شده) خالی بگذارید. در غیر این صورت نام‌های ⁨BoringSSL⁩ را با «⁨:⁩» از هم جدا کنید، مثلاً ⁨ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256⁩. یک نام ناشناخته جلوی شروع موتور را می‌گیرد.</string>
     <string name="disable_grease_title">غیرفعال‌سازی ⁨GREASE⁩</string>
     <string name="disable_grease_desc">مقدارهای ⁨GREASE⁩ را از دست‌دهی ⁨TLS⁩ حذف کن. خاموش بودن، آن را شبیه کروم نگه می‌دارد.</string>
-    <string name="tls_verify_title">بررسی گواهی گیت‌وی</string>
-    <string name="tls_verify_desc">گواهی ⁨TLS⁩ گیت‌وی ⁨WARP⁩ را به‌جای اعتماد خودکار، بررسی می‌کند. پیش‌فرض خاموش است؛ فقط اگر گیت‌وی خودتان را برای این کار آماده کرده‌اید روشنش کنید، وگرنه اتصال ناموفق می‌شود.</string>
     <string name="tls_group_footer">روی ⁨MASQUE⁩ بر ⁨HTTP/2⁩، فراخوانی‌های ⁨API⁩ وارپ و دریافت ⁨ECH⁩ اعمال می‌شود. ⁨HTTP/3⁩ (⁨QUIC⁩) فقط ⁨TLS 1.3⁩ را ارائه می‌کند، پس هیچ رمز ⁨TLS 1.2⁩ در آن فهرست نمی‌شود.</string>
 
     <!-- 1.5.0: custom configs -->
@@ -640,8 +638,10 @@
     <string name="cc_hops_double">زنجیرهٔ دوتایی</string>
     <string name="cc_hops_triple">زنجیرهٔ سه‌تایی</string>
     <string name="cc_group_import">افزودن کانفیگ</string>
+    <string name="cc_import_title">وارد کردن</string>
+    <string name="cc_import_desc">لینک یا متن، فایل، یا کد ⁨QR⁩. اگر فقط یک لینک باشد، خودکار به‌عنوان اشتراک اضافه و به‌روز نگه داشته می‌شود.</string>
     <string name="cc_import_paste">لینک یا متن</string>
-    <string name="cc_import_paste_desc">لینک‌های ⁨vless⁩، ⁨vmess⁩، ⁨trojan⁩، ⁨ss⁩، ⁨socks⁩، ⁨wireguard⁩، ⁨hysteria2⁩، ⁨npvt⁩، کانفیگ ⁨JSON⁩ ایکس‌ری یا آدرس اشتراک</string>
+    <string name="cc_import_paste_desc">لینک‌های ⁨vless⁩، ⁨vmess⁩، ⁨trojan⁩، ⁨ss⁩، ⁨socks⁩، ⁨wireguard⁩، ⁨hysteria2⁩، ⁨npvt⁩، کانفیگ ⁨JSON⁩ ایکس‌ری یا لینک اشتراک - اگر فقط یک لینک باشد به‌عنوان اشتراک اضافه می‌شود</string>
     <string name="cc_import_file">وارد کردن فایل</string>
     <string name="cc_import_file_desc">‏⁨.npvt⁩، ⁨.txt⁩، ⁨.json⁩ یا تصویر کد ⁨QR⁩</string>
     <string name="cc_import_camera">اسکن کد ⁨QR⁩</string>
@@ -649,7 +649,7 @@
     <string name="cc_import_image">کد ⁨QR⁩ از تصویر</string>
     <string name="cc_import_image_desc">اسکرین‌شات یا عکس ذخیره‌شده</string>
     <string name="cc_import_action">وارد کن</string>
-    <string name="cc_paste_hint">یک یا چند لینک، کانفیگ ⁨JSON⁩ یا آدرس اشتراک را بچسبانید</string>
+    <string name="cc_paste_hint">برای افزودن به‌عنوان اشتراک، لینک اشتراک را بچسبانید؛ یا یک یا چند لینک کانفیگ یا کانفیگ ⁨JSON⁩ را برای وارد کردن فوری</string>
     <string name="cc_paste_clipboard">چسباندن از کلیپ‌بورد</string>
     <string name="cc_scan_prompt">دوربین را روی کد ⁨QR⁩ کانفیگ بگیرید</string>
     <string name="cc_imported">‏%1$d کانفیگ اضافه شد</string>
@@ -763,21 +763,11 @@
     <string name="update_changes_loading">در حال دریافت تغییرات…</string>
     <string name="update_changes_unavailable">دریافت تغییرات ممکن نشد.</string>
     <string name="update_changes_full">باز کردن چنج‌لاگ کامل</string>
-    <string name="about_changelog">چنج‌لاگ</string>
-    <string name="about_changelog_desc">فایل‌های تغییرکرده و مسیر آن‌ها</string>
-    <string name="changelog_dialog_title">فایل‌های تغییرکرده</string>
-    <string name="changelog_no_files">برای این نسخه فهرست فایل‌ها منتشر نشده است.</string>
-    <string name="changelog_close">بستن</string>
     <!-- Auto-select & subscriptions (1.8.0) -->
     <string name="cc_auto_select">انتخاب خودکار سریع‌ترین</string>
     <string name="cc_auto_select_desc">بعد از تست سرعت، به سریع‌ترین کانفیگِ پاسخ‌داده‌شده سوئیچ می‌کند. اگر کانفیگ فعال در اتصال ناموفق بود، به‌جای نمایش خطا، کانفیگ بعدی را امتحان می‌کند.</string>
     <string name="cc_group_subscriptions">اشتراک‌ها</string>
-    <string name="cc_sub_empty">هنوز اشتراکی اضافه نشده است.</string>
-    <string name="cc_sub_add">افزودن اشتراک</string>
-    <string name="cc_sub_add_desc">لینکی که فهرستی از کانفیگ‌ها برمی‌گرداند و خودش به‌روز می‌شود</string>
-    <string name="cc_sub_add_action">افزودن</string>
-    <string name="cc_sub_name">نام</string>
-    <string name="cc_sub_url">آدرس اشتراک</string>
+    <string name="cc_sub_empty">هنوز اشتراکی اضافه نشده. یک لینک اشتراک را بالا بچسبانید تا اضافه شود.</string>
     <string name="cc_sub_refresh">به‌روزرسانی</string>
     <string name="cc_sub_refresh_all">به‌روزرسانی همهٔ اشتراک‌ها</string>
     <string name="cc_sub_refresh_all_desc">فهرست جدید کانفیگ‌ها را همین الان از هر کدام می‌گیرد</string>
