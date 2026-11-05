@@ -650,6 +650,8 @@
     <string name="tls_ciphers_help">Leave empty for the recommended default (Chrome’s list, shown above). Otherwise BoringSSL names separated by “:”, e.g. ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256. An unknown name stops the engine at startup.</string>
     <string name="disable_grease_title">Disable GREASE</string>
     <string name="disable_grease_desc">Leave the GREASE values out of the TLS handshake. Off keeps it looking like Chrome’s.</string>
+    <string name="tls_verify_title">Verify gateway certificate</string>
+    <string name="tls_verify_desc">Checks the WARP gateway’s TLS certificate instead of trusting it automatically. Off by default - only turn this on if you run your own gateway set up for it, otherwise connects will fail.</string>
     <string name="tls_group_footer">Applies to MASQUE over HTTP/2, the WARP API calls and the ECH lookup. HTTP/3 (QUIC) offers TLS 1.3 only, so it lists no TLS 1.2 ciphers.</string>
 
     <!-- 1.5.0: custom configs -->

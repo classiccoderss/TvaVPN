@@ -1586,6 +1586,14 @@ private fun EnginePage(
                 enabled = editable,
                 onCheckedChange = { onProfileChange(profile.copy(disableGrease = it)) },
             )
+            RowDivider(inset = false)
+            SettingsSwitchRow(
+                title = stringResource(R.string.tls_verify_title),
+                summary = stringResource(R.string.tls_verify_desc),
+                checked = profile.tlsVerify,
+                enabled = editable,
+                onCheckedChange = { onProfileChange(profile.copy(tlsVerify = it)) },
+            )
         }
         GroupFooter(stringResource(R.string.tls_group_footer))
     }

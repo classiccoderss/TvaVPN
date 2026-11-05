@@ -135,8 +135,8 @@ android {
         applicationId = "app.tvavpn.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 22
-        versionName = "1.7.2"
+        versionCode = 24
+        versionName = "1.7.4"
 
         ndk {
             // arm64 (primary), arm, and x86_64 for Chromebooks and emulators
