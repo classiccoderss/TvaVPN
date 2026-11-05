@@ -723,15 +723,22 @@ private fun TransportPage(
     onProfileChange: (ConnectionProfile) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-) = SettingsScaffold(
-    stringResource(R.string.section_transport), onBack, modifier,
-    icon = Icons.Rounded.Bolt, accent = AetherAmber, subtitle = stringResource(R.string.cat_transport_desc),
 ) {
     // Automatic MTU detection (1.9.0): state for the button in the tuning group below.
+    //
+    // Hoisted here, not inside the SettingsScaffold content lambda below: that
+    // lambda is a plain `LazyListScope.() -> Unit` (same shape as LazyColumn's
+    // own content param), NOT a @Composable scope, so LocalContext.current,
+    // rememberCoroutineScope() and remember{} cannot be called directly inside
+    // it - only nested @Composable lambdas (settingsSection {}, item {}) can.
     val mtuContext = LocalContext.current
     val mtuScope = rememberCoroutineScope()
     var mtuProbing by remember { mutableStateOf(false) }
 
+    SettingsScaffold(
+        stringResource(R.string.section_transport), onBack, modifier,
+        icon = Icons.Rounded.Bolt, accent = AetherAmber, subtitle = stringResource(R.string.cat_transport_desc),
+    ) {
     settingsSection {
         SettingsGroup {
             SettingsChoiceRow(
@@ -958,6 +965,7 @@ private fun TransportPage(
                 )
             }
         }
+    }
     }
 }
 
