@@ -97,6 +97,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density"
             android:theme="@style/Theme.AetherMobile"
             android:windowSoftInputMode="adjustResize">
@@ -106,6 +107,80 @@
                 <!-- Issue #21: without this category a TV launcher never lists the
                      app, however well it would otherwise run. -->
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+
+            <!--
+              EXTERNAL IMPORT (tvaVPN): makes the app a candidate in the system's
+              "Open with" / "Share" chooser for every config format ConfigParser
+              understands (see ConfigParser's header comment), instead of the app
+              only ever receiving a config by copy/paste or camera.
+
+              launchMode="singleTask" above is load-bearing here: without it,
+              tapping several links in a row (or Share -> tvaVPN twice) stacks a
+              new MainActivity - with its own TAMPER BLOCK / profile-load work in
+              onCreate - on top of the running one each time, instead of routing
+              into the existing instance through onNewIntent.
+
+              MainActivity.handleIncomingIntent() turns whatever arrives here into
+              an ImportIntentBus.Payload; CustomConfigsPage is the only thing that
+              actually imports it, so this reuses the exact same ConfigImporter /
+              ConfigParser path a manual paste or file pick already goes through.
+            -->
+
+            <!-- 1) A share link tapped anywhere (a browser, Telegram, a file
+                 manager's link, ...): the link itself IS the config, so no file
+                 I/O is involved - see ConfigParser.LINK_SCHEMES, minus the
+                 generic socks/wireguard schemes other apps also claim. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="vmess" />
+                <data android:scheme="vless" />
+                <data android:scheme="trojan" />
+                <data android:scheme="ss" />
+                <data android:scheme="hysteria2" />
+                <data android:scheme="hy2" />
+                <data android:scheme="hysteria" />
+                <data android:scheme="hy" />
+                <data android:scheme="npvt" />
+            </intent-filter>
+
+            <!-- 2) A config file opened from a file manager with a MIME type the
+                 system actually knows - Xray/V2Ray JSON, or a bare-JSON npvt. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:mimeType="application/json" />
+                <data android:scheme="file" android:mimeType="application/json" />
+            </intent-filter>
+
+            <!-- 3) A `.npvt` file. Android has no registered MIME type for this
+                 extension, so most file managers hand it over as
+                 application/octet-stream or leave the type empty - matching by
+                 mimeType alone would miss it. mimeType="*/*" + pathPattern is the
+                 standard workaround for a custom, unregistered extension. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="*/*" />
+                <data android:host="*" />
+                <data android:pathPattern=".*\\.npvt" />
+            </intent-filter>
+
+            <!-- 4) Shared INTO the app from somewhere else (Share sheet): a
+                 pasted/forwarded config as text, a config file as JSON, or a
+                 screenshot/photo of a QR code - ConfigImporter.fromImage already
+                 decodes those, this just gives it a way in besides the in-app
+                 picker. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
 

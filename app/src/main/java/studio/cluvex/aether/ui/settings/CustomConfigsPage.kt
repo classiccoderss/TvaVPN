@@ -70,6 +70,7 @@ import studio.cluvex.aether.custom.ChainPlacement
 import studio.cluvex.aether.custom.ConfigFormat
 import studio.cluvex.aether.custom.ConfigProtocol
 import studio.cluvex.aether.custom.ConfigImporter
+import studio.cluvex.aether.custom.ImportIntentBus
 import studio.cluvex.aether.custom.ConfigParser
 import studio.cluvex.aether.custom.ConfigPing
 import studio.cluvex.aether.custom.ConfigPingStore
@@ -181,6 +182,39 @@ internal fun CustomConfigsPage(
                 busy = false
                 refreshingSubs = false
             }
+        }
+    }
+
+    // EXTERNAL IMPORT (tvaVPN): a config link/file the user opened or shared in
+    // from outside the app (see MainActivity + ImportIntentBus). This page is
+    // the only thing that ever consumes a pending payload, so whichever
+    // instance of it is composed when one shows up runs it, through the exact
+    // same runImport() / addSubscriptionFromLink() as a manual paste or file
+    // pick does above.
+    val pendingExternalImport by ImportIntentBus.pending.collectAsState()
+    LaunchedEffect(pendingExternalImport) {
+        val payload = pendingExternalImport ?: return@LaunchedEffect
+        ImportIntentBus.consume()
+        // Same restriction as every other action on this page (see the
+        // `enabled = editable` rows above) - a locked profile does not get to
+        // add configs this way either.
+        if (!editable) return@LaunchedEffect
+        when (payload) {
+            is ImportIntentBus.Payload.Text -> {
+                val input = ConfigParser.cleanInput(payload.value)
+                // Same single-line-URL rule the paste dialog below uses: a bare
+                // https:// link shared in is a subscription, not a one-off config.
+                val isLink = input.lines().size == 1 &&
+                    (input.startsWith("https://", ignoreCase = true) ||
+                        input.startsWith("http://", ignoreCase = true))
+                if (isLink) {
+                    addSubscriptionFromLink(input)
+                } else {
+                    runImport { p -> ConfigImporter.fromText(context, input, ConfigSource.LINK, p) }
+                }
+            }
+            is ImportIntentBus.Payload.FileUri ->
+                runImport { p -> ConfigImporter.fromFile(context, payload.uri, p) }
         }
     }
 

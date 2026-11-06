@@ -8,22 +8,28 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,7 +47,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.runtime.collectAsState
 import android.widget.Toast
 import kotlinx.coroutines.launch
@@ -59,7 +69,17 @@ import studio.cluvex.aether.core.LogLine
  * exactly WHY no site loads even though the button says connected.
  */
 @Composable
-fun DiagnosticsPanel(modifier: Modifier = Modifier, startExpanded: Boolean = false) {
+fun DiagnosticsPanel(
+    modifier: Modifier = Modifier,
+    startExpanded: Boolean = false,
+    // 1.3.2: the log console used to be drawn right here, under the checks and
+    // the three action buttons - "copy" worked, but on a long check list it sat
+    // below a screenful of other things, which is exactly the clutter this
+    // callback fixes. Logs now open on their own page (see DiagnosticsLogPage);
+    // the default is a no-op so a caller that has nowhere to navigate still
+    // compiles.
+    onOpenLogs: () -> Unit = {},
+) {
     var expanded by remember { mutableStateOf(startExpanded) }
     val checks by DiagnosticsLog.checks.collectAsState()
     val scope = rememberCoroutineScope()
@@ -175,7 +195,33 @@ fun DiagnosticsPanel(modifier: Modifier = Modifier, startExpanded: Boolean = fal
 
                     Spacer(Modifier.height(12.dp))
 
-                    LogConsole()
+                    // 1.3.2: a one-line summary instead of the scrollable console
+                    // that used to sit here. The full, copyable log lives on its
+                    // own page now (DiagnosticsLogPage) - nothing else on that
+                    // page to scroll past before you reach the copy button.
+                    val lineCount = DiagnosticsLog.lines.collectAsState().value.size
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = if (lineCount == 0) {
+                                androidx.compose.ui.res.stringResource(R.string.diag_empty_logs)
+                            } else {
+                                androidx.compose.ui.res.pluralStringResource(
+                                    R.plurals.diag_log_lines_count,
+                                    lineCount,
+                                    lineCount,
+                                )
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onOpenLogs) {
+                            Text(androidx.compose.ui.res.stringResource(R.string.diag_view_logs))
+                        }
+                    }
                 }
             }
         }
@@ -230,43 +276,128 @@ private fun CheckRow(check: ComponentCheck) {
     }
 }
 
+/**
+ * The log console, full screen and on its own: nothing above it but a title
+ * and the three actions that matter (copy, copy-redacted, clear), so they are
+ * never more than one tap away no matter how long the log gets.
+ *
+ * 1.3.2: this used to be a 120-260dp scrollable box wedged under the checks
+ * and buttons inside [DiagnosticsPanel] - the right content, the wrong amount
+ * of room, and the copy buttons it needed were a full screen-height scroll
+ * away on a long check list. [DiagnosticsPanel] now shows a line count and a
+ * "view full log" button instead; this is where that button leads.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LogConsole() {
-    // 1.2.2 UI-SPEED FIX: the log list was collected by the panel itself, so
-    // every engine line (hundreds during a scan) recomposed the whole
-    // diagnostics card — and the whole drawer around it — even while the log
-    // console was collapsed and invisible. The console is only composed when
-    // it is open, and it is the only thing subscribed to the log now.
-    // AUDIT F-3: the open console is the most revealing surface in the app (exit
+fun DiagnosticsLogPage(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    // AUDIT F-3: the open log is the most revealing surface in the app (exit
     // IP, bridge, endpoints, enrolment handle), so the window is blocked from
-    // screenshots, screen recording and the recents thumbnail while it is open.
-    // The console is only composed while open, so the flag lifts on collapse.
+    // screenshots, screen recording and the recents thumbnail while it is
+    // open. This page is only composed while it is on screen, so the flag
+    // lifts the moment the user backs out of it.
     SecureSurface()
+
     val lines: List<LogLine> = DiagnosticsLog.lines.collectAsState().value
+    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     val scroll = rememberScrollState()
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 120.dp, max = 260.dp)
-            .background(Color(0xFF0C0F16), RoundedCornerShape(12.dp))
-            .padding(12.dp)
-            .verticalScroll(scroll),
-    ) {
-        if (lines.isEmpty()) {
-            Text(
-                text = androidx.compose.ui.res.stringResource(R.string.diag_empty_logs),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF8A93A6),
-            )
-        } else {
-            Column {
-                lines.forEach { line ->
+
+    // Follow the tail as new lines arrive, the way a terminal does, so the
+    // newest line (usually the one the user came here to copy) is on screen
+    // without them hunting for it.
+    LaunchedEffect(lines.size) {
+        if (lines.isNotEmpty()) scroll.animateScrollTo(scroll.maxValue)
+    }
+
+    Scaffold(
+        modifier = modifier,
+        containerColor = Color(0xFF0C0F16),
+        topBar = {
+            TopAppBar(
+                title = {
                     Text(
-                        text = line.format(),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        color = logColor(line.level),
+                        text = androidx.compose.ui.res.stringResource(R.string.diag_logs_title),
+                        fontWeight = FontWeight.SemiBold,
                     )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = androidx.compose.ui.res.stringResource(R.string.a11y_back),
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        // Same sensitive-copy path the old inline console used:
+                        // the verbatim log carries exit IP, endpoints and the
+                        // WARP enrolment handle, so it is flagged sensitive and
+                        // kept out of the clipboard preview and history.
+                        copySensitive(context, DiagnosticsLog.exportText(), "aether-log")
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.diag_copied),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Rounded.ContentCopy,
+                            contentDescription = androidx.compose.ui.res.stringResource(R.string.diag_copy),
+                        )
+                    }
+                    IconButton(onClick = {
+                        clipboard.setText(AnnotatedString(DiagnosticsLog.exportRedactedText()))
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.diag_copied_redacted),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Shield,
+                            contentDescription = androidx.compose.ui.res.stringResource(R.string.diag_copy_redacted),
+                        )
+                    }
+                    IconButton(onClick = { DiagnosticsLog.clear() }) {
+                        Icon(
+                            imageVector = Icons.Rounded.DeleteSweep,
+                            contentDescription = androidx.compose.ui.res.stringResource(R.string.diag_clear),
+                        )
+                    }
+                },
+            )
+        },
+    ) { insets ->
+        Box(
+            modifier = Modifier
+                .padding(insets)
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .verticalScroll(scroll)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            if (lines.isEmpty()) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(R.string.diag_empty_logs),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF8A93A6),
+                )
+            } else {
+                // Selectable so a user who only wants one line (an error, an
+                // IP to double-check) can long-press and grab just that,
+                // instead of the "copy logs" button's all-or-nothing export.
+                SelectionContainer {
+                    Column {
+                        lines.forEach { line ->
+                            Text(
+                                text = line.format(),
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.sp,
+                                color = logColor(line.level),
+                            )
+                        }
+                    }
                 }
             }
         }

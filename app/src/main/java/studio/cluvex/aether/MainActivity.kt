@@ -1,6 +1,7 @@
 package studio.cluvex.aether
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -30,6 +31,7 @@ import studio.cluvex.aether.core.IpEndpoint
 import studio.cluvex.aether.core.NetProbe
 import studio.cluvex.aether.core.PortLease
 import studio.cluvex.aether.core.SignerIdentity
+import studio.cluvex.aether.custom.ImportIntentBus
 import studio.cluvex.aether.ui.TamperScreen
 import studio.cluvex.aether.core.TunnelConfig
 import studio.cluvex.aether.data.LanguagePrefs
@@ -70,6 +72,58 @@ class MainActivity : ComponentActivity() {
      * [LanguagePrefs] for the full chain.
      */
     private fun pinLayoutDirection() = LanguagePrefs.applyLayoutDirection(this)
+
+    /**
+     * EXTERNAL IMPORT (tvaVPN): the activity is already running (launchMode
+     * "singleTask", see the manifest) and the user tapped another config
+     * link/file, or shared another one in - a fresh VIEW/SEND intent arrives
+     * here instead of a new onCreate. setIntent() keeps getIntent() consistent
+     * for anything else that reads it later in this instance's lifetime.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    /**
+     * Turns the raw intent the system handed this activity into an
+     * [ImportIntentBus.Payload], when it is one of the external-import cases
+     * the manifest's VIEW/SEND filters declare. Everything after this is
+     * CustomConfigsPage's job (see ImportIntentBus) - this only extracts the
+     * text or the file Uri, nothing here parses or imports a config itself.
+     */
+    private fun handleIncomingIntent(intent: Intent) {
+        val payload: ImportIntentBus.Payload? = when (intent.action) {
+            Intent.ACTION_VIEW -> intent.data?.let { uri ->
+                if (uri.scheme?.lowercase() in CONFIG_LINK_SCHEMES) {
+                    // vmess:// / vless:// / npvt:// / ... - the URI itself is the
+                    // config text, not a file to open.
+                    ImportIntentBus.Payload.Text(uri.toString())
+                } else {
+                    // A content:// or file:// Uri from a file manager's "Open with".
+                    ImportIntentBus.Payload.FileUri(uri)
+                }
+            }
+            Intent.ACTION_SEND -> {
+                val type = intent.type.orEmpty()
+                if (type.startsWith("text/")) {
+                    intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
+                        ?.let { ImportIntentBus.Payload.Text(it) }
+                } else {
+                    @Suppress("DEPRECATION")
+                    val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                    } else {
+                        intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                    }
+                    uri?.let { ImportIntentBus.Payload.FileUri(it) }
+                }
+            }
+            else -> null
+        }
+        if (payload != null) ImportIntentBus.post(payload)
+    }
 
     /**
      * `configChanges` keeps this activity alive across rotation, density and
@@ -178,6 +232,10 @@ class MainActivity : ComponentActivity() {
         }
 
         maybeRequestNotificationPermission()
+
+        // EXTERNAL IMPORT: the intent that actually started this onCreate (a
+        // plain launcher tap has no VIEW/SEND action, so this is a no-op then).
+        handleIncomingIntent(intent)
 
         // Feature merge: a previous run died with an uncaught JVM
         // exception — open the saved crash report once so the user can see and
@@ -378,5 +436,16 @@ class MainActivity : ComponentActivity() {
          * profile, not the stored one.
          */
         private const val PROFILE_SAVE_DEBOUNCE_MS = 300L
+
+        /**
+         * Schemes ConfigParser parses as a bare link on their own (see
+         * ConfigParser.LINK_SCHEMES) that also have a VIEW intent-filter in the
+         * manifest. socks:// / socks5:// / wireguard:// / wg:// are left out of
+         * both: those schemes are claimed by other, unrelated apps too broadly to
+         * register tvaVPN for system-wide, so those still only import by paste.
+         */
+        private val CONFIG_LINK_SCHEMES = setOf(
+            "vmess", "vless", "trojan", "ss", "hysteria2", "hy2", "hysteria", "hy", "npvt",
+        )
     }
 }

@@ -11,10 +11,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.Campaign
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Dns
@@ -40,7 +38,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -95,6 +92,7 @@ import studio.cluvex.aether.transport.TorCountries
 import studio.cluvex.aether.ui.AboutPanel
 import studio.cluvex.aether.ui.SharePanel
 import studio.cluvex.aether.ui.components.AppPickerDialog
+import studio.cluvex.aether.ui.components.DiagnosticsLogPage
 import studio.cluvex.aether.ui.components.DiagnosticsPanel
 import studio.cluvex.aether.ui.components.LtrOutlinedTextField
 import studio.cluvex.aether.ui.components.SegmentedSelector
@@ -128,6 +126,13 @@ enum class SettingsRoute {
     APPEARANCE,
 
     DIAGNOSTICS,
+
+    /** 1.3.2: the diagnostics log, on its own page so it isn't buried under the
+     *  checks and buttons on [DIAGNOSTICS] - that made the copy button hard to
+     *  find on a long check list. Opened from [DIAGNOSTICS]; never a start
+     *  destination on its own. */
+    LOGS,
+
     SHARE,
     ABOUT,
 
@@ -193,8 +198,9 @@ fun SettingsHost(
         SettingsRoute.CUSTOM_CONFIGS -> CustomConfigsPage(editable, back, modifier)
         SettingsRoute.BACKUP -> BackupPage(profile, editable, onProfileChange, back, modifier)
         SettingsRoute.DIAGNOSTICS -> PanelPage(stringResource(R.string.diag_title), back, modifier) {
-            DiagnosticsPanel(startExpanded = true)
+            DiagnosticsPanel(startExpanded = true, onOpenLogs = { open(SettingsRoute.LOGS) })
         }
+        SettingsRoute.LOGS -> DiagnosticsLogPage(onBack = back, modifier = modifier)
         SettingsRoute.SHARE -> PanelPage(stringResource(R.string.share_title), back, modifier) {
             SharePanel(
                 state = state,

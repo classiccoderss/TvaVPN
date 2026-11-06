@@ -29,6 +29,8 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +55,7 @@ import studio.cluvex.aether.ui.components.ConnectButton
 import studio.cluvex.aether.ui.components.ConnectionDetails
 import studio.cluvex.aether.ui.components.ConnectionStatus
 import studio.cluvex.aether.ui.components.FitToHeight
+import studio.cluvex.aether.custom.ImportIntentBus
 import studio.cluvex.aether.ui.settings.RowDivider
 import studio.cluvex.aether.ui.settings.SettingsGroup
 import studio.cluvex.aether.ui.settings.SettingsHost
@@ -85,6 +88,20 @@ fun HomeScreen(
     // entirely while the user is in settings - instead of running behind a sheet
     // and competing for the same frame budget.
     var settingsRoute by remember { mutableStateOf<SettingsRoute?>(null) }
+
+    // EXTERNAL IMPORT (tvaVPN): a config was opened/shared into the app from
+    // outside (MainActivity posts it - see ImportIntentBus) and nothing else is
+    // currently open on top of the home screen, so jump straight to Custom
+    // configs; CustomConfigsPage itself picks up and runs the actual import
+    // once it is composed. If the user is already elsewhere in Settings, leave
+    // them there - the import stays queued in ImportIntentBus until they reach
+    // Custom configs on their own.
+    val pendingImport by ImportIntentBus.pending.collectAsState()
+    LaunchedEffect(pendingImport) {
+        if (pendingImport != null && settingsRoute == null) {
+            settingsRoute = SettingsRoute.CUSTOM_CONFIGS
+        }
+    }
 
     val openRoute = settingsRoute
     if (openRoute != null) {
