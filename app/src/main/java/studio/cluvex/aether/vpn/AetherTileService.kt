@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import studio.cluvex.aether.MainActivity
 import studio.cluvex.aether.R
 import studio.cluvex.aether.core.AetherController
+import studio.cluvex.aether.core.AppLog
 import studio.cluvex.aether.data.ProfileStore
 import studio.cluvex.aether.model.ConnectionState
 import studio.cluvex.aether.model.isBusy
@@ -65,6 +66,9 @@ class AetherTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
+        // Only the tile tap itself - not the connect/disconnect outcome, which
+        // belongs to the tunnel's own log (AetherController/ConnectionLog).
+        AppLog.event("qs-tile", "tapped")
         val state = AetherController.state.value
         if (state.isConnected || state.isBusy) {
             AetherController.disconnect(this)
@@ -72,6 +76,7 @@ class AetherTileService : TileService() {
         }
         // The VPN consent dialog can only be launched from an Activity.
         if (VpnService.prepare(this) != null) {
+            AppLog.event("qs-tile", "consent missing - opening app")
             openAppForConsent()
             return
         }

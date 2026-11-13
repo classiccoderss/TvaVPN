@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.BugReport
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.HealthAndSafety
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Timer
@@ -64,6 +66,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import studio.cluvex.aether.R
+import studio.cluvex.aether.core.AppLog
+import studio.cluvex.aether.core.GuardianPrefs
 import studio.cluvex.aether.core.MtuProbe
 import studio.cluvex.aether.custom.CustomConfigStore
 import studio.cluvex.aether.core.AccessToken
@@ -126,6 +130,15 @@ enum class SettingsRoute {
     APPEARANCE,
 
     DIAGNOSTICS,
+    GUARDIAN,
+    TVA_AI,
+
+    /**
+     * The Gemini API key, model ID, and connection test - split out of
+     * [TVA_AI] so that page can be chat only. Reachable both from its own
+     * row on [HOME] and from a gear icon on [TVA_AI] itself.
+     */
+    TVA_AI_SETTINGS,
 
     /** 1.3.2: the diagnostics log, on its own page so it isn't buried under the
      *  checks and buttons on [DIAGNOSTICS] - that made the copy button hard to
@@ -144,6 +157,15 @@ enum class SettingsRoute {
 
     /** Export the tunnel settings to a file / import them from one. */
     BACKUP,
+
+    /**
+     * Step-by-step app-flow events ([studio.cluvex.aether.core.AppLog]) -
+     * deliberately separate from [LOGS], which is the tunnel/connection log.
+     * This one is app-wide (any screen can log to it, not only backup
+     * import/export) and is a normal top-level row on [HOME] next to
+     * Diagnostics, same as every other destination here.
+     */
+    APP_LOG,
 }
 
 /**
@@ -169,9 +191,17 @@ fun SettingsHost(
     }
     val route = stack.last()
 
-    val open: (SettingsRoute) -> Unit = { next -> stack.add(next) }
+    // Single choke point for every settings navigation: every route in
+    // SettingsRoute is reached only through this `open`, so one log call
+    // here covers all of Settings instead of one at each of the ~18 rows
+    // on the home page.
+    val open: (SettingsRoute) -> Unit = { next ->
+        AppLog.event("settings-nav", "opened ${next.name}")
+        stack.add(next)
+    }
     val back: () -> Unit = {
         if (stack.size > 1) {
+            AppLog.event("settings-nav", "back from ${stack.last().name}")
             stack.removeAt(stack.lastIndex)
         } else {
             onClose()
@@ -197,9 +227,13 @@ fun SettingsHost(
         SettingsRoute.APPEARANCE -> AppearancePage(back, modifier)
         SettingsRoute.CUSTOM_CONFIGS -> CustomConfigsPage(editable, back, modifier)
         SettingsRoute.BACKUP -> BackupPage(profile, editable, onProfileChange, back, modifier)
+        SettingsRoute.APP_LOG -> AppLogPage(back, modifier)
         SettingsRoute.DIAGNOSTICS -> PanelPage(stringResource(R.string.diag_title), back, modifier) {
             DiagnosticsPanel(startExpanded = true, onOpenLogs = { open(SettingsRoute.LOGS) })
         }
+        SettingsRoute.GUARDIAN -> GuardianPage(back, modifier)
+        SettingsRoute.TVA_AI -> TvaAiPage(state, profile, onProfileChange, back, onOpenSettings = { open(SettingsRoute.TVA_AI_SETTINGS) }, modifier = modifier)
+        SettingsRoute.TVA_AI_SETTINGS -> TvaAiSettingsPage(state, back, modifier)
         SettingsRoute.LOGS -> DiagnosticsLogPage(onBack = back, modifier = modifier)
         SettingsRoute.SHARE -> PanelPage(stringResource(R.string.share_title), back, modifier) {
             SharePanel(
@@ -213,6 +247,63 @@ fun SettingsHost(
             AboutPanel(startExpanded = true)
         }
         SettingsRoute.UPDATE -> UpdatePage(back, modifier)
+    }
+}
+
+@Composable
+private fun GuardianPage(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    var monitoring by remember { mutableStateOf(GuardianPrefs.isMonitoringEnabled(context)) }
+    var recovery by remember { mutableStateOf(GuardianPrefs.isQualityRecoveryEnabled(context)) }
+
+    SettingsScaffold(
+        title = stringResource(R.string.guardian_title),
+        onBack = onBack,
+        modifier = modifier,
+        icon = Icons.Rounded.HealthAndSafety,
+        accent = AetherMint,
+        subtitle = stringResource(R.string.guardian_intro),
+    ) {
+        settingsSection {
+            GroupCaption(stringResource(R.string.guardian_group))
+            SettingsGroup {
+                SettingsSwitchRow(
+                    title = stringResource(R.string.guardian_monitor_title),
+                    summary = stringResource(R.string.guardian_monitor_desc),
+                    checked = monitoring,
+                    icon = Icons.Rounded.Speed,
+                    iconTint = AetherMint,
+                    onCheckedChange = { enabled ->
+                        monitoring = enabled
+                        GuardianPrefs.setMonitoringEnabled(context, enabled)
+                    },
+                )
+                RowDivider()
+                SettingsSwitchRow(
+                    title = stringResource(R.string.guardian_recovery_title),
+                    summary = stringResource(R.string.guardian_recovery_desc),
+                    checked = recovery,
+                    enabled = monitoring,
+                    icon = Icons.Rounded.RestartAlt,
+                    iconTint = AetherBlue,
+                    onCheckedChange = { enabled ->
+                        recovery = enabled
+                        GuardianPrefs.setQualityRecoveryEnabled(context, enabled)
+                    },
+                )
+            }
+        }
+        settingsSection {
+            GroupCaption(stringResource(R.string.guardian_safety_group))
+            SettingsGroup {
+                Text(
+                    text = stringResource(R.string.guardian_safety_note),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = OnDarkMuted,
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                )
+            }
+        }
     }
 }
 
@@ -340,6 +431,20 @@ private fun SettingsHomePage(
         settingsSection {
             GroupCaption(stringResource(R.string.cat_group_app))
             SettingsGroup {
+                // The TVA AI chat itself is no longer listed here: it is its
+                // own top-level destination, reachable from the nav drawer
+                // (see HomeScreen.kt), not nested under Settings. Only the
+                // Gemini key/model/connection-test page stays in Settings,
+                // since that is ordinary app configuration like the rows
+                // around it.
+                SettingsNavRow(
+                    title = stringResource(R.string.tva_ai_settings_title),
+                    summary = stringResource(R.string.tva_ai_settings_nav_desc),
+                    icon = Icons.Rounded.VpnKey,
+                    iconTint = AetherViolet,
+                    onClick = { onOpen(SettingsRoute.TVA_AI_SETTINGS) },
+                )
+                RowDivider()
                 SettingsNavRow(
                     title = stringResource(R.string.language_title),
                     summary = stringResource(R.string.cat_appearance_desc),
@@ -363,6 +468,27 @@ private fun SettingsHomePage(
                     icon = Icons.Rounded.BugReport,
                     iconTint = AetherAmber,
                     onClick = { onOpen(SettingsRoute.DIAGNOSTICS) },
+                )
+                RowDivider()
+                SettingsNavRow(
+                    title = stringResource(R.string.guardian_title),
+                    summary = stringResource(R.string.guardian_nav_desc),
+                    icon = Icons.Rounded.HealthAndSafety,
+                    iconTint = AetherMint,
+                    onClick = { onOpen(SettingsRoute.GUARDIAN) },
+                )
+                RowDivider()
+                // Event log (AppLog): every UI flow in the app logs here, not
+                // just backup import/export - this used to be reachable only
+                // from inside the Backup page, which made it look like an
+                // import/export-only tool. A top-level row, next to
+                // Diagnostics, is where a general app event log belongs.
+                SettingsNavRow(
+                    title = stringResource(R.string.applog_nav_title),
+                    summary = stringResource(R.string.applog_nav_desc),
+                    icon = Icons.Rounded.Article,
+                    iconTint = AetherGlowCyan,
+                    onClick = { onOpen(SettingsRoute.APP_LOG) },
                 )
                 RowDivider()
                 SettingsNavRow(

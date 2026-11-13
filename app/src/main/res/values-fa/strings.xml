@@ -71,6 +71,19 @@
     <string name="diag_copy_redacted">کپی لاگ بدون آدرس‌ها (بی‌خطر برای اشتراک)</string>
     <string name="diag_copied_redacted">لاگ پاک‌سازی‌شده کپی شد — آی‌پی‌ها و شناسه‌ها حذف شدند</string>
     <string name="diag_log_sealed">لاگی که روی این دستگاه نگه داشته می‌شود با کلید همین دستگاه رمزنگاری شده است.</string>
+
+    <!-- لاگ رویدادها (AppLog): رویدادهای قدم‌به‌قدمِ کل برنامه (نه لاگ تونل/اتصال
+         بالا) - یک ردیف مستقل در تنظیمات، نه مخصوص یک صفحه‌ی خاص. اسمش «لاگ
+         رویدادها» گذاشته شد، نه «لاگ برنامه»: هم با اسم خود برنامه قاطی
+         می‌شد، هم با «عیب‌یابی و لاگ‌ها»ی بالا اشتباه گرفته می‌شد؛ این اسم
+         دقیقاً همونیه که نشون می‌ده. -->
+    <string name="applog_nav_title">لاگ‌های برنامه</string>
+    <string name="applog_nav_desc">هر چی تو کل برنامه اتفاق افتاده - باز شدن برنامه، وارد کردن کانفیگ، آپدیت، ورود تیم، اشتراک‌گذاری و بقیه‌ی بخش‌ها (جدا از لاگ اتصال)</string>
+    <string name="applog_title">لاگ‌های برنامه</string>
+    <string name="applog_show_more">نمایش %1$d مورد قدیمی‌تر</string>
+    <string name="applog_copy">کپی لاگ</string>
+    <string name="applog_copied">لاگ در کلیپ‌بورد کپی شد</string>
+    <string name="applog_empty">هنوز چیزی ثبت نشده</string>
     <!-- کنسول لاگ به صفحه‌ی مستقل خودش منتقل شد تا زیر بررسی‌ها و دکمه‌ها گم نشود
          و دکمه‌های کپی راحت‌تر پیدا شوند. -->
     <string name="diag_view_logs">نمایش کامل لاگ</string>
@@ -663,7 +676,9 @@
     <string name="cc_paste_clipboard">چسباندن از کلیپ‌بورد</string>
     <string name="cc_scan_prompt">دوربین را روی کد ⁨QR⁩ کانفیگ بگیرید</string>
     <string name="cc_imported">‏%1$d کانفیگ اضافه شد</string>
+    <string name="cc_imported_one">اضافه شد: %1$s</string>
     <string name="cc_import_failed">وارد نشد: %1$s</string>
+    <string name="cc_settings_file_detected">این یک فایل تنظیمات tvaVPN است، نه کانفیگ. آن را از مسیر «تنظیمات ← پشتیبان‌گیری» وارد کنید.</string>
     <string name="cc_qr_none">هیچ کد ⁨QR⁩ پیدا نشد</string>
     <string name="cc_password_title">رمز عبور</string>
     <string name="cc_password_desc">این کانفیگ ⁨NapsternetV⁩ رمزدار است. رمزی را که سازنده‌اش داده وارد کنید.</string>
@@ -777,6 +792,23 @@
     <string name="cc_auto_select">انتخاب خودکار سریع‌ترین</string>
     <string name="cc_auto_select_desc">بعد از تست سرعت، به سریع‌ترین کانفیگِ پاسخ‌داده‌شده سوئیچ می‌کند. اگر کانفیگ فعال در اتصال ناموفق بود، به‌جای نمایش خطا، کانفیگ بعدی را امتحان می‌کند.</string>
     <string name="cc_group_subscriptions">اشتراک‌ها</string>
+    <!-- اسکن آی‌پی تمیز (1.11.0) -->
+    <string name="clean_ip_action">آی‌پی تمیز</string>
+    <string name="clean_ip_scan_tab">اسکن آی‌پی تمیز همهٔ این برگه</string>
+    <string name="clean_ip_scan_tab_desc">همهٔ کانفیگ‌های قابل‌اسکن را یکی‌یکی بررسی می‌کند</string>
+    <string name="clean_ip_settings">تنظیمات آی‌پی تمیز</string>
+    <string name="clean_ip_footer">برای کانفیگی که سرورش کند یا مسدود شده، یک آدرس سالم از کلودفلر پیدا و خودکار جایگزین می‌کند؛ نام میزبان خود کانفیگ (SNI) هرگز تغییر نمی‌کند. فقط کانفیگ‌هایی که روی TLS یک دامنه را نشان می‌دهند قابل‌اسکن‌اند؛ Hysteria و REALITY قابل‌اسکن نیستند.</string>
+    <string name="clean_ip_scanning">در حال اسکن برای «%1$s»…</string>
+    <string name="clean_ip_progress">%1$d از %2$d بررسی شد</string>
+    <string name="clean_ip_remaining">%1$d کانفیگ دیگر در صف</string>
+    <string name="clean_ip_none">«%1$s»: آی‌پی مناسبی پیدا نشد. آدرس فعلی حفظ شد؛ دوباره اسکن کنید یا بازه را در تنظیمات آی‌پی تمیز بزرگ‌تر کنید.</string>
+    <string name="clean_ip_found">«%1$s»: به %2$s تغییر کرد (%3$d ms)</string>
+    <string name="clean_ip_ok">باشه</string>
+    <string name="clean_ip_depth">چند آدرس امتحان شود</string>
+    <string name="clean_ip_range">بازهٔ آی‌پی سفارشی (اختیاری)</string>
+    <string name="clean_ip_range_hint">104.16.0.0/13, 172.64.0.0/13</string>
+    <string name="clean_ip_range_desc">یک یا چند بلوک CIDR یا آدرس، جدا با ویرگول. برای استفاده از فهرست پیش‌فرض کلودفلر خالی بگذارید.</string>
+    <string name="clean_ip_save">ذخیره</string>
     <string name="cc_sub_empty">هنوز اشتراکی اضافه نشده. یک لینک اشتراک را بالا بچسبانید تا اضافه شود.</string>
     <string name="cc_sub_refresh">به‌روزرسانی</string>
     <string name="cc_sub_refresh_all">به‌روزرسانی همهٔ اشتراک‌ها</string>
@@ -787,4 +819,85 @@
     <string name="cc_sub_last_ok">%1$d کانفیگ · به‌روزرسانی %2$s</string>
     <string name="cc_sub_remove_title">این اشتراک حذف شود؟</string>
     <string name="cc_sub_remove_body">«%1$s» و کانفیگ‌هایی که اضافه کرده حذف می‌شوند. کانفیگ‌هایی که خودتان دستی اضافه کرده‌اید حفظ می‌شوند.</string>
+
+    <string name="guardian_title">محافظ هوشمند اتصال</string>
+    <string name="guardian_nav_desc">پایش بی‌سروصدای سلامت تونل و بازیابی اتصال ضعیف</string>
+    <string name="guardian_intro">از تونل فعال VPN محافظت می‌کند؛ بدون اعلام‌های مکرر و اتصال مجدد غیرضروری.</string>
+    <string name="guardian_group">پایش و بازیابی</string>
+    <string name="guardian_monitor_title">پایش کیفیت اتصال</string>
+    <string name="guardian_monitor_desc">مسیر واقعی تونل را در بازه‌های زمانی بررسی می‌کند و به یک پاسخ کند واکنش نشان نمی‌دهد.</string>
+    <string name="guardian_recovery_title">بازیابی افت شدید کیفیت</string>
+    <string name="guardian_recovery_desc">فقط پس از چند بار تأخیر بحرانی و هنگامی که ترافیک فعالی در تونل نیست، موتور را راه‌اندازی مجدد می‌کند.</string>
+    <string name="guardian_safety_group">نحوه عملکرد</string>
+    <string name="guardian_safety_note">محافظ هیچ پیام یا اعلان اضافه‌ای از خودش نشان نمی‌دهد و کنترل‌های معمول اتصال و قطع اتصال تغییر نمی‌کنند. بازیابی خودکار فقط در پس‌زمینه موتور را دوباره راه‌اندازی می‌کند تا مسیر تونل بازسازی شود. بازیابی تونل کاملاً ازکارافتاده همچنان توسط سیستم ایمنی سرویس VPN انجام می‌شود.</string>
+
+    <!-- دستیار هوشمند TVA -->
+    <string name="back">بازگشت</string>
+    <string name="cancel">لغو</string>
+    <string name="tva_ai_title">هوش مصنوعی TVA</string>
+    <string name="tva_ai_nav_desc">دستیار فنی برای تنظیمات و عیب‌یابی TVA</string>
+    <string name="tva_ai_subtitle">دستیار فنی TVA</string>
+    <string name="tva_ai_settings_title">تنظیمات هوش مصنوعی TVA</string>
+    <string name="tva_ai_settings_nav_desc">کلید API جمینای، مدل، و آزمایش اتصال</string>
+    <string name="tva_ai_open_settings">باز کردن تنظیمات هوش مصنوعی TVA</string>
+    <string name="tva_ai_settings_required">پیش از چت، کلید API جمینای را در «تنظیمات هوش مصنوعی TVA» وارد کن.</string>
+    <string name="tva_ai_go_to_settings">برو به تنظیمات هوش مصنوعی TVA</string>
+    <string name="tva_ai_ready_hint">کلید API جمینای را وارد کن و اتصال را آزمایش کن.</string>
+    <string name="tva_ai_configuration">اتصال به Gemini</string>
+    <string name="tva_ai_api_key">کلید API جمینای</string>
+    <string name="tva_ai_model">شناسه مدل</string>
+    <string name="tva_ai_show_key">نمایش کلید API</string>
+    <string name="tva_ai_hide_key">مخفی کردن کلید API</string>
+    <string name="tva_ai_save">ذخیره</string>
+    <string name="tva_ai_saved">تنظیمات API به‌صورت امن روی این دستگاه ذخیره شد.</string>
+    <string name="tva_ai_test">آزمایش اتصال</string>
+    <string name="tva_ai_verified">اتصال تأیید شد</string>
+    <string name="tva_ai_route_starting">در حال ارسال از طریق VPN متصل شما…</string>
+    <string name="tva_ai_route_retrying">اتصال VPN ناپایدار بود. دوباره تلاش می‌شود…</string>
+    <string name="tva_ai_route_notice">درخواست‌های TVA AI از همان اتصال اصلی VPN شما عبور می‌کنند، مثل بقیه ترافیک برنامه؛ مسیر جداگانه‌ای باز نمی‌شود. متن پرسش‌ها برای Gemini به گوگل ارسال می‌شود و تابع سهمیه و هزینه کلید API شماست.</string>
+    <string name="tva_ai_vpn_not_connected">برای استفاده از TVA AI باید به VPN متصل باشی. ابتدا به VPN وصل شو و دوباره امتحان کن.</string>
+    <string name="tva_ai_missing_key">ابتدا کلید API جمینای را وارد کن.</string>
+    <string name="tva_ai_generic_error">درخواست TVA AI انجام نشد.</string>
+    <string name="tva_ai_response_received">پاسخ دریافت شد.</string>
+    <string name="tva_ai_message_hint">پیامت را بنویس…</string>
+    <string name="tva_ai_send">ارسال پیام</string>
+    <string name="tva_ai_optimize">بررسی تنظیمات من</string>
+    <string name="tva_ai_optimize_prompt">تنظیمات فعلی TVA VPN من را بررسی کن و فقط بهبودهای ایمن و مستند پیشنهاد بده. فعلاً چیزی را اعمال نکن.</string>
+    <string name="tva_ai_analyze_logs">تحلیل گزارش اتصال</string>
+    <string name="tva_ai_analyze_logs_prompt">گزارش اتصال پالایش‌شده‌ای را که برنامه فرستاده تحلیل کن. واقعیت‌های مشاهده‌شده را از علت‌های احتمالی جدا کن و مفیدترین اقدام بعدی را پیشنهاد بده.</string>
+    <string name="tva_ai_welcome">سلام! من TVA AI هستم. ساختار فنی این نسخه از TVA VPN را می‌شناسم. می‌توانی درباره تنظیمات، گزارش اتصال، پروتکل‌ها سؤال کنی یا بخواهی تنظیماتت را با رعایت ایمنی بررسی کنم.</string>
+    <string name="tva_ai_working">TVA AI در حال پردازش است…</string>
+    <string name="tva_ai_apply">بررسی و اعمال پیشنهاد</string>
+    <string name="tva_ai_apply_title">تنظیمات پیشنهادی اعمال شود؟</string>
+    <string name="tva_ai_apply_connected_message">VPN متصل است. اعمال این تنظیمات در همین لحظه به راه‌اندازی مجدد تونل اصلی نیاز دارد. می‌توانی آن‌ها را برای اتصال بعدی هم ذخیره کنی.</string>
+    <string name="tva_ai_apply_message">تنظیمات اعتبارسنجی‌شده برای اتصال بعدی VPN ذخیره می‌شوند.</string>
+    <string name="tva_ai_apply_later">اعمال در اتصال بعدی</string>
+    <string name="tva_ai_apply_reconnect">اعمال و اتصال مجدد همین حالا</string>
+    <string name="tva_ai_applied_next_connect">تنظیمات ذخیره شدند و در اتصال بعدی استفاده می‌شوند.</string>
+    <string name="tva_ai_reconnecting">در حال اعمال تنظیمات و راه‌اندازی مجدد VPN…</string>
+    <string name="tva_ai_reconnect_started">تنظیمات اعمال شدند. اتصال مجدد VPN شروع شد.</string>
+    <string name="tva_ai_reconnect_timeout">قطع اتصال VPN به‌موقع کامل نشد. تنظیمات جدید ذخیره شدند، اما تونل فعال راه‌اندازی مجدد نشد.</string>
+    <string name="tva_ai_proposal_rejected">پیشنهاد توسط بررسی‌های ایمنی داخلی رد شد: %1$s</string>
+    <string name="tva_ai_undo">بازگردانی تنظیمات قبلی</string>
+    <string name="tva_ai_undo_done">تنظیمات قبلی بازگردانی شدند.</string>
+    <string name="tva_ai_copy_proposal">کپی جزئیات پیشنهاد</string>
+    <string name="tva_ai_benefit_label">مزیت احتمالی: %1$s</string>
+    <string name="tva_ai_tradeoff_label">ملاحظه: %1$s</string>
+    <string name="tva_ai_confidence_label">میزان اطمینان: %1$d٪</string>
+    <string name="tva_ai_setting_mtu">MTU</string>
+    <string name="tva_ai_setting_protocol">پروتکل</string>
+    <string name="tva_ai_setting_scan_mode">حالت اسکن</string>
+    <string name="tva_ai_setting_ip_version">نسخه IP</string>
+    <string name="tva_ai_setting_noize">پروفایل Noize</string>
+    <string name="tva_ai_setting_keepalive">Keepalive</string>
+    <string name="tva_ai_setting_fragment_preset">حالت تکه‌بندی</string>
+    <string name="tva_ai_setting_quick_reconnect">اتصال مجدد سریع</string>
+    <string name="tva_ai_setting_fast_endpoint_only">فقط Endpoint سریع</string>
+
+    <string name="tva_ai_model_invalid">شناسه مدل Gemini معتبر نیست. فقط از حروف انگلیسی، عدد، نقطه، زیرخط یا خط تیره استفاده کن.</string>
+    <string name="tva_ai_key_invalid">کلید API نویسه نامعتبر دارد. بررسی کن که کلید را درست کپی کرده باشی.</string>
+    <string name="tva_ai_key_save_failed">اندروید نتوانست کلید API را به‌صورت امن ذخیره کند. فضای ذخیره‌سازی امن دستگاه را بررسی و دوباره تلاش کن.</string>
+    <string name="tva_ai_key_cleared">کلید API ذخیره‌شده Gemini از این دستگاه حذف شد.</string>
+    <string name="tva_ai_undo_reconnect_started">تنظیمات قبلی بازگردانی شد و اتصال مجدد VPN شروع شد.</string>
+    <string name="quality_degraded">کیفیت اتصال مدتی است ضعیف بوده</string>
 </resources>

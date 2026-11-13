@@ -157,6 +157,29 @@ class ConfigParserTest {
     }
 
     @Test
+    fun `npvs subscription file holds several servers, each named`() {
+        val text = CustomConfigTestSupport.npvs(
+            "[" + CustomConfigTestSupport.npvtServer("alpha", "{}").removeSurrounding("[", "]") + "," +
+                CustomConfigTestSupport.npvtServer("beta", "{}").removeSurrounding("[", "]") + "]",
+            "{}",
+        )
+        assertTrue(text.startsWith(NpvtCodec.SUB_HEADER))
+        val configs = parse(text)
+        assertEquals(2, configs.size)
+        assertEquals("alpha #1", configs[0].name)
+        assertEquals("beta #2", configs[1].name)
+    }
+
+    @Test
+    fun `npvs link form`() {
+        val text = CustomConfigTestSupport.npvs(CustomConfigTestSupport.npvtServer("alpha", "{}"), "{}")
+        val link = "npvs://" + Base64.getEncoder().encodeToString(text.toByteArray())
+        val configs = parse(link)
+        assertEquals(1, configs.size)
+        assertEquals("alpha", configs.single().name)
+    }
+
+    @Test
     fun `unlocked npvt is editable and keeps insecure`() {
         val text = CustomConfigTestSupport.npvt(
             CustomConfigTestSupport.npvtServer("open", "{\"isLocked\":false,\"password\":\"\",\"expiryDate\":\"\",\"deviceIds\":\"\"}"),

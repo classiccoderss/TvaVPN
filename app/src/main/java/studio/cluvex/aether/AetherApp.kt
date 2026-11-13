@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import android.util.Log
+import studio.cluvex.aether.core.AppLog
 import studio.cluvex.aether.core.DiagnosticsLog
 import studio.cluvex.aether.core.IdentityVault
 import studio.cluvex.aether.core.SignerIdentity
@@ -37,6 +38,14 @@ class AetherApp : Application() {
         DiagnosticsLog.init(File(filesDir, "diagnostics.log"))
         installCrashHandler()
 
+        // App-wide event log (AppLog, "Event log" in Settings): separate from
+        // DiagnosticsLog/ConnectionLog above, which are the tunnel's own log.
+        // init() first, so the header on every exported report says which
+        // build and device it came from; the "process started" line is then
+        // the very first thing any report shows.
+        AppLog.init(this)
+        AppLog.event("app", "process started")
+
         // 1.2.9-r3 SECURITY: everything below touches the keystore, the package
         // manager and the filesystem, so it runs OFF the main thread - startup
         // latency is a product feature on a VPN app that is often opened to fix a
@@ -67,6 +76,7 @@ class AetherApp : Application() {
             // is the only place that can run AFTER a successful in-place update,
             // since applying one kills this process - see UpdateChecker's doc.
             runCatching { studio.cluvex.aether.core.UpdateChecker.cleanupLeftoverDownload(this) }
+            AppLog.event("app", "background init finished (signer check, key vault, share creds, custom configs, update cleanup)")
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -105,6 +115,14 @@ class AetherApp : Application() {
                     "FATAL on thread '${thread.name}': $throwable\n" +
                         Log.getStackTraceString(throwable),
                 )
+            }
+            // Best-effort only: AppLog is in-memory and does NOT survive the
+            // process dying, so this line is never in the exported report for
+            // THIS crash - it only helps if something downstream reads
+            // AppLog.lines before the process actually exits. DiagnosticsLog
+            // above (and CRASH_FILE below) are the ones that persist.
+            runCatching {
+                AppLog.event("crash", "FATAL on thread '${thread.name}': ${throwable.javaClass.simpleName}: ${throwable.message}")
             }
             runCatching {
                 File(filesDir, CRASH_FILE).writeText(

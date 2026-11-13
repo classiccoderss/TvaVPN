@@ -320,10 +320,11 @@ object Diagnostics {
      * log showing the bootstrap at 30 % and climbing, and the app then reported the
      * generic "self-test failed" for a Tor that was simply not finished yet.
      *
-     * [handshakeGraceMs] `<= 0` keeps the old single-shot behaviour, which is the
-     * right one for a stage that is up the moment its port is: an Aether tunnel
-     * that cannot handshake immediately is broken, and waiting on it would only
-     * delay the ladder's next rung.
+     * [handshakeGraceMs] `<= 0` keeps the old single-shot behaviour. 1.7.4: no
+     * caller should actually pass that anymore -- every stage 1, Tor-fronted or
+     * not, gets a grace window now, because the engine itself holds SOCKS5 closed
+     * until the tunnel is handshaked and proven end-to-end. `<= 0` is kept only as
+     * a safety default for a caller that genuinely has no budget left to give.
      *
      * [alive] lets a dead engine end the wait instantly, and [abort] is how the
      * caller stops waiting on a bootstrap that has stopped moving -- without it,

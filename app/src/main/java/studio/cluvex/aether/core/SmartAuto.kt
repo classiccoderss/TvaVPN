@@ -169,6 +169,11 @@ object SmartAuto {
                 masqueHttp2 = user.masqueHttp2 || (h2 && proto == Protocol.MASQUE),
                 fragment = user.fragment || frag,
                 ech = user.ech || ech,
+                // In AUTO, do not reuse a cached endpoint solely because it
+                // answers. Measure its data-plane quality; if it is slow, the
+                // engine makes a short fresh scan and keeps the verified cache
+                // unless a genuinely faster endpoint is found.
+                fastEndpointOnly = user.fastEndpointOnly || user.protocol == Protocol.AUTO,
                 // TURBO per attempt: the ladder's speed comes from trying the
                 // NEXT strategy quickly, not from one long exhaustive scan.
                 scanMode = ScanMode.TURBO,

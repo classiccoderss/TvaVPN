@@ -133,6 +133,12 @@ object SmartPlusPlan {
                 masqueHttp2 = user.masqueHttp2 || (http2 && isMasqueFamily),
                 fragment = user.fragment || fragment,
                 ech = user.ech || ech,
+                // AUTO should not blindly keep a cached endpoint that is alive
+                // but extremely slow. The engine compares its measured RTT with
+                // the calibrated budget, scans briefly for something faster, and
+                // retains the verified cached endpoint if the scan cannot beat it.
+                // Hand-picked protocols keep the user's explicit preference.
+                fastEndpointOnly = user.fastEndpointOnly || user.protocol == Protocol.AUTO,
                 // TURBO per attempt: a lane's speed comes from moving on quickly,
                 // not from one exhaustive scan. The user's own scan mode is used
                 // for the confirming connect once a tactic has won.

@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import studio.cluvex.aether.R
+import studio.cluvex.aether.core.AppLog
 
 /**
  * First-run onboarding, ported from the merged OnboardingScreen and restyled
@@ -61,7 +62,10 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                TextButton(onClick = onFinished) {
+                TextButton(onClick = {
+                    AppLog.event("onboarding", "skipped at page ${pagerState.currentPage}")
+                    onFinished()
+                }) {
                     Text(stringResource(R.string.onboarding_skip))
                 }
             }
@@ -136,6 +140,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                     if (pagerState.currentPage < 2) {
                         scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
                     } else {
+                        AppLog.event("onboarding", "completed all pages")
                         onFinished()
                     }
                 },

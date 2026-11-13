@@ -8,7 +8,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
@@ -30,6 +32,8 @@ import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -65,6 +69,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import studio.cluvex.aether.R
+import kotlinx.coroutines.CoroutineScope
+import studio.cluvex.aether.core.AppLog
+import studio.cluvex.aether.custom.CleanIpScanner
 import studio.cluvex.aether.custom.ChainMode
 import studio.cluvex.aether.custom.ChainPlacement
 import studio.cluvex.aether.custom.ConfigFormat
@@ -85,6 +92,9 @@ import studio.cluvex.aether.ui.theme.OnDarkDim
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
+
+/** [AppLog] tag for everything logged from this page. */
+private const val LOG_TAG = "custom-configs"
 
 /** An import that stopped at a NapsternetV password prompt, and how to retry it. */
 private class PendingImport(
@@ -139,25 +149,43 @@ internal fun CustomConfigsPage(
     var refreshingSubs by remember { mutableStateOf(false) }
     var removingSub by remember { mutableStateOf<Subscription?>(null) }
 
+    // Clean-IP scan (1.11.0).
+    var cleanIpRun by remember { mutableStateOf<CleanIpRun?>(null) }
+    var cleanIpSettingsOpen by remember { mutableStateOf(false) }
+
     val importedMsg = stringResource(R.string.cc_imported)
+    val importedOneMsg = stringResource(R.string.cc_imported_one)
     val failedMsg = stringResource(R.string.cc_import_failed)
     val noQrMsg = stringResource(R.string.cc_qr_none)
     val clipboardEmptyMsg = stringResource(R.string.cc_paste_empty)
+    val settingsFileMsg = stringResource(R.string.cc_settings_file_detected)
 
     fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
 
-    fun runImport(password: String? = null, task: suspend (String?) -> List<CustomConfig>) {
+    fun runImport(password: String? = null, source: String = "unknown", task: suspend (String?) -> List<CustomConfig>) {
         busy = true
+        AppLog.event(LOG_TAG, "import started (source=$source${if (password != null) ", retry with password" else ""})")
         scope.launch {
             try {
                 val list = task(password)
                 withContext(Dispatchers.IO) { CustomConfigStore.add(context, list) }
-                toast(String.format(importedMsg, list.size))
+                AppLog.event(LOG_TAG, "import OK (source=$source): ${list.size} config(s) added")
+                // Tapping a single npvt:// / npvs:// link or file - the common
+                // case for both - used to only ever report a count ("1
+                // config(s) added"), leaving the person to open the list to
+                // see what they actually just added. One result names it.
+                val single = list.singleOrNull()
+                toast(
+                    if (single != null) String.format(importedOneMsg, single.name)
+                    else String.format(importedMsg, list.size),
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NpvtPasswordException) {
+                AppLog.event(LOG_TAG, "import (source=$source) needs a password (wrong=${e.wrong})")
                 pending = PendingImport(e.wrong, task)
             } catch (e: Exception) {
+                AppLog.event(LOG_TAG, "import FAILED (source=$source): ${e.javaClass.simpleName}: ${e.message}")
                 toast(String.format(failedMsg, e.message ?: e.javaClass.simpleName))
             } finally {
                 busy = false
@@ -174,10 +202,15 @@ internal fun CustomConfigsPage(
     fun addSubscriptionFromLink(url: String) {
         busy = true
         refreshingSubs = true
+        AppLog.event(LOG_TAG, "subscription added from pasted/shared link")
         val sub = SubscriptionStore.add(context, "", url)
         scope.launch {
             try {
                 SubscriptionStore.refresh(context, sub)
+                AppLog.event(LOG_TAG, "subscription refresh OK")
+            } catch (e: Exception) {
+                AppLog.event(LOG_TAG, "subscription refresh failed: ${e.javaClass.simpleName}")
+                throw e
             } finally {
                 busy = false
                 refreshingSubs = false
@@ -210,26 +243,45 @@ internal fun CustomConfigsPage(
                 if (isLink) {
                     addSubscriptionFromLink(input)
                 } else {
-                    runImport { p -> ConfigImporter.fromText(context, input, ConfigSource.LINK, p) }
+                    runImport(source = "external-link") { p -> ConfigImporter.fromText(context, input, ConfigSource.LINK, p) }
                 }
             }
             is ImportIntentBus.Payload.FileUri ->
-                runImport { p -> ConfigImporter.fromFile(context, payload.uri, p) }
+                runImport(source = "external-file") { p -> ConfigImporter.fromFile(context, payload.uri, p) }
+            // A settings backup file (see BackupPage.isSettingsBackupFile) - not
+            // a config, so not this page's job; HomeScreen routes these to
+            // BackupPage instead. This branch is only reached if the user was
+            // already sitting on this page when the file arrived, so the
+            // payload is already consumed above and there is nothing left to
+            // queue for BackupPage - just point them at the right screen.
+            is ImportIntentBus.Payload.SettingsFileUri -> toast(settingsFileMsg)
         }
     }
 
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        if (uri != null) runImport { p -> ConfigImporter.fromFile(context, uri, p) }
+        if (uri == null) return@rememberLauncherForActivityResult
+        // Same mix-up as the external-import case above, just reached by the
+        // user picking the file themselves: a settings backup is valid JSON
+        // too, so without this check it would reach ConfigParser and fail as
+        // "no proxy outbound" instead of saying what it actually is.
+        scope.launch {
+            val isSettingsFile = withContext(Dispatchers.IO) { isSettingsBackupFile(context, uri) }
+            if (isSettingsFile) {
+                toast(settingsFileMsg)
+            } else {
+                runImport(source = "file-picker") { p -> ConfigImporter.fromFile(context, uri, p) }
+            }
+        }
     }
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        if (uri != null) runImport { p -> ConfigImporter.fromImage(context, uri, p) }
+        if (uri != null) runImport(source = "qr-image") { p -> ConfigImporter.fromImage(context, uri, p) }
     }
     val scanQr = rememberLauncherForActivityResult(ScanContract()) { result ->
         val text = result.contents
         if (text.isNullOrBlank()) {
             if (result.originalIntent != null) toast(noQrMsg)
         } else {
-            runImport { p -> ConfigImporter.fromText(context, text, ConfigSource.QR, p) }
+            runImport(source = "qr-scan") { p -> ConfigImporter.fromText(context, text, ConfigSource.QR, p) }
         }
     }
     val scanPrompt = stringResource(R.string.cc_scan_prompt)
@@ -391,6 +443,11 @@ internal fun CustomConfigsPage(
                             ping = pings[cfg.id] ?: ConfigPing.Report(),
                             onSelect = { CustomConfigStore.select(context, cfg.id) },
                             onMore = { actionsFor = cfg },
+                            onCleanIp = if (editable && cleanIpRun == null && CleanIpScanner.targetSniOf(cfg) != null) {
+                                { runCleanIp(scope, context, listOf(cfg)) { cleanIpRun = it } }
+                            } else {
+                                null
+                            },
                         )
                     }
                 }
@@ -417,6 +474,31 @@ internal fun CustomConfigsPage(
                     )
                 }
                 GroupFooter(stringResource(R.string.cc_ping_footer))
+            }
+        }
+
+        val cleanIpEligible = st.configs.filter { CleanIpScanner.targetSniOf(it) != null }
+        if (cleanIpEligible.isNotEmpty()) {
+            settingsSection {
+                SettingsGroup {
+                    SettingsActionRow(
+                        title = stringResource(R.string.clean_ip_scan_tab),
+                        summary = stringResource(
+                            if (cleanIpRun != null) R.string.cc_ping_running else R.string.clean_ip_scan_tab_desc,
+                        ),
+                        icon = Icons.Rounded.Search,
+                        enabled = editable && cleanIpRun == null,
+                        onClick = { runCleanIp(scope, context, cleanIpEligible) { cleanIpRun = it } },
+                    )
+                    RowDivider(inset = false)
+                    SettingsActionRow(
+                        title = stringResource(R.string.clean_ip_settings),
+                        icon = Icons.Rounded.Tune,
+                        enabled = editable,
+                        onClick = { cleanIpSettingsOpen = true },
+                    )
+                }
+                GroupFooter(stringResource(R.string.clean_ip_footer))
             }
         }
 
@@ -487,7 +569,7 @@ internal fun CustomConfigsPage(
                         if (isLink) {
                             addSubscriptionFromLink(input)
                         } else {
-                            runImport { p -> ConfigImporter.fromText(context, input, ConfigSource.LINK, p) }
+                            runImport(source = "paste") { p -> ConfigImporter.fromText(context, input, ConfigSource.LINK, p) }
                         }
                     },
                 ) { Text(stringResource(R.string.cc_import_action)) }
@@ -523,7 +605,7 @@ internal fun CustomConfigsPage(
                     enabled = password.isNotEmpty(),
                     onClick = {
                         pending = null
-                        runImport(password, p.retry)
+                        runImport(password, "password-retry", p.retry)
                     },
                 ) { Text(stringResource(R.string.cc_import_action)) }
             },
@@ -557,7 +639,11 @@ internal fun CustomConfigsPage(
                     }
                     TextButton(
                         enabled = editable && cfg.id != st.activeId,
-                        onClick = { CustomConfigStore.select(context, cfg.id); actionsFor = null },
+                        onClick = {
+                            AppLog.event(LOG_TAG, "config selected as active")
+                            CustomConfigStore.select(context, cfg.id)
+                            actionsFor = null
+                        },
                     ) { Text(stringResource(R.string.cc_action_use)) }
                     TextButton(
                         onClick = {
@@ -565,6 +651,15 @@ internal fun CustomConfigsPage(
                             scope.launch { ConfigPingStore.test(context, cfg) }
                         },
                     ) { Text(stringResource(R.string.cc_ping_one)) }
+                    if (editable && CleanIpScanner.targetSniOf(cfg) != null) {
+                        TextButton(
+                            enabled = cleanIpRun == null,
+                            onClick = {
+                                actionsFor = null
+                                runCleanIp(scope, context, listOf(cfg)) { cleanIpRun = it }
+                            },
+                        ) { Text(stringResource(R.string.clean_ip_action)) }
+                    }
                     TextButton(
                         enabled = editable && !cfg.locked && cfg.raw.isNotBlank(),
                         onClick = { editing = cfg; actionsFor = null },
@@ -622,6 +717,7 @@ internal fun CustomConfigsPage(
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
+                                AppLog.event(LOG_TAG, "manual edit re-parse failed: ${e.javaClass.simpleName}")
                                 toast(String.format(failedMsg, e.message ?: e.javaClass.simpleName))
                             }
                         }
@@ -672,6 +768,7 @@ internal fun CustomConfigsPage(
             text = { Text(stringResource(R.string.cc_delete_body, cfg.name)) },
             confirmButton = {
                 TextButton(onClick = {
+                    AppLog.event(LOG_TAG, "config deleted")
                     CustomConfigStore.delete(context, cfg.id)
                     deleting = null
                 }) { Text(stringResource(R.string.cc_action_delete), color = MaterialTheme.colorScheme.error) }
@@ -690,6 +787,7 @@ internal fun CustomConfigsPage(
             text = { Text(stringResource(R.string.cc_delete_all_body)) },
             confirmButton = {
                 TextButton(onClick = {
+                    AppLog.event(LOG_TAG, "all configs deleted")
                     CustomConfigStore.deleteAll(context)
                     confirmDeleteAll = false
                 }) { Text(stringResource(R.string.cc_action_delete), color = MaterialTheme.colorScheme.error) }
@@ -776,6 +874,161 @@ internal fun CustomConfigsPage(
             },
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
         )
+    }
+
+    // Clean-IP result (1.11.0): stays on screen until the person taps the X - never
+    // auto-dismissed, since a scan's outcome (found, or "none qualified") is exactly
+    // the kind of thing that is easy to miss if it closes itself.
+    cleanIpRun?.let { run ->
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.clean_ip_action)) },
+            text = {
+                when (run) {
+                    is CleanIpRun.Scanning -> Column {
+                        Text(stringResource(R.string.clean_ip_scanning, run.configName))
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(R.string.clean_ip_progress, run.tested, run.total),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = OnDarkDim,
+                        )
+                        if (run.queue.isNotEmpty()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                stringResource(R.string.clean_ip_remaining, run.queue.size),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = OnDarkDim,
+                            )
+                        }
+                    }
+                    is CleanIpRun.Done -> Column {
+                        run.outcomes.forEach { outcome ->
+                            Text(
+                                when (val found = outcome.found) {
+                                    null -> stringResource(R.string.clean_ip_none, outcome.configName)
+                                    else -> stringResource(
+                                        R.string.clean_ip_found,
+                                        outcome.configName,
+                                        found.ip,
+                                        found.ms,
+                                    )
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (run is CleanIpRun.Done) {
+                    TextButton(onClick = { cleanIpRun = null }) { Text(stringResource(R.string.clean_ip_ok)) }
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        )
+    }
+
+    if (cleanIpSettingsOpen) {
+        var depthText by remember { mutableStateOf(st.cleanIpDepth.toString()) }
+        var rangeText by remember { mutableStateOf(st.cleanIpRange) }
+        AlertDialog(
+            onDismissRequest = { cleanIpSettingsOpen = false },
+            title = { Text(stringResource(R.string.clean_ip_settings)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LtrOutlinedTextField(
+                        value = depthText,
+                        onValueChange = { v -> depthText = v.filter { it.isDigit() }.take(4) },
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.clean_ip_depth)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    LtrOutlinedTextField(
+                        value = rangeText,
+                        onValueChange = { rangeText = it },
+                        label = { Text(stringResource(R.string.clean_ip_range)) },
+                        placeholder = { Text(stringResource(R.string.clean_ip_range_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        stringResource(R.string.clean_ip_range_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnDarkDim,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    CustomConfigStore.setCleanIpSettings(
+                        context,
+                        depthText.toIntOrNull() ?: st.cleanIpDepth,
+                        rangeText,
+                    )
+                    cleanIpSettingsOpen = false
+                }) { Text(stringResource(R.string.clean_ip_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { cleanIpSettingsOpen = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        )
+    }
+}
+
+/**
+ * Clean-IP scan state (1.11.0), shown by the result dialog.
+ *
+ * [Scanning] carries [queue]: the configs still waiting their turn when more than one
+ * was asked for ("Scan clean IPs of this tab"), so the dialog can say how many are
+ * left, not just the one in progress.
+ */
+private sealed interface CleanIpRun {
+    data class Scanning(val configName: String, val tested: Int, val total: Int, val queue: List<CustomConfig>) :
+        CleanIpRun
+    data class Done(val outcomes: List<CleanIpOutcome>) : CleanIpRun
+}
+
+private data class CleanIpOutcome(val configName: String, val found: CleanIpScanner.Candidate?)
+
+/**
+ * Runs a Clean-IP scan for [configs], one config at a time (never in parallel with
+ * each other - each one already scans many candidate addresses in parallel on its
+ * own, see [CleanIpScanner]). [update] is called with the live progress and, at the
+ * end, the full [CleanIpRun.Done] result for every config that was eligible.
+ * Ineligible configs (no TLS SNI to front - see [CleanIpScanner.targetSniOf]) are
+ * silently skipped rather than reported as failures, since they were never something
+ * Clean IP could have helped with in the first place.
+ */
+private fun runCleanIp(
+    scope: CoroutineScope,
+    context: android.content.Context,
+    configs: List<CustomConfig>,
+    update: (CleanIpRun?) -> Unit,
+) {
+    val settings = CustomConfigStore.state.value
+    scope.launch {
+        val outcomes = ArrayList<CleanIpOutcome>()
+        var remaining = configs
+        while (remaining.isNotEmpty()) {
+            val cfg = remaining.first()
+            remaining = remaining.drop(1)
+            val sni = CleanIpScanner.targetSniOf(cfg) ?: continue
+            val port = CleanIpScanner.targetPortOf(cfg) ?: continue
+            update(CleanIpRun.Scanning(cfg.name, 0, settings.cleanIpDepth, remaining))
+            val found = CleanIpScanner.scan(sni, port, settings.cleanIpRange, settings.cleanIpDepth) { tested, total ->
+                update(CleanIpRun.Scanning(cfg.name, tested, total, remaining))
+            }
+            if (found != null) {
+                CustomConfigStore.applyCleanIp(context, cfg.id, found.ip, port)
+            }
+            AppLog.event(
+                LOG_TAG,
+                "Clean IP for \"${cfg.name}\": " + (found?.let { "${it.ip} (${it.ms} ms)" } ?: "none qualified"),
+            )
+            outcomes += CleanIpOutcome(cfg.name, found)
+        }
+        update(if (outcomes.isEmpty()) null else CleanIpRun.Done(outcomes))
     }
 }
 
@@ -897,6 +1150,7 @@ private fun ConfigRow(
     ping: ConfigPing.Report,
     onSelect: () -> Unit,
     onMore: () -> Unit,
+    onCleanIp: (() -> Unit)?,
 ) {
     val detail = buildList {
         add(if (config.format == ConfigFormat.NPVT) "${config.protocol.short} \u00b7 npvt" else config.protocol.short)
@@ -945,6 +1199,11 @@ private fun ConfigRow(
             )
         }
         PingBadge(ping)
+        if (onCleanIp != null) {
+            IconButton(onClick = onCleanIp, enabled = enabled) {
+                Icon(Icons.Rounded.Search, contentDescription = stringResource(R.string.clean_ip_action))
+            }
+        }
         IconButton(onClick = onMore) {
             Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.cc_more))
         }

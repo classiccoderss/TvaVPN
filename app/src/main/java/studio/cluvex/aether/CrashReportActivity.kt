@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import studio.cluvex.aether.core.AppLog
 import studio.cluvex.aether.ui.components.copySensitive
 import studio.cluvex.aether.ui.theme.AetherTheme
 import java.io.File
@@ -66,6 +67,7 @@ class CrashReportActivity : ComponentActivity() {
         studio.cluvex.aether.data.LanguagePrefs.applyLayoutDirection(this)
         val crashFile = File(filesDir, "last_crash.txt")
         val details = runCatching { crashFile.readText() }.getOrDefault("")
+        AppLog.event("crash-report", "shown to user, ${details.length} chars read from last_crash.txt")
 
         setContent {
             AetherTheme {
@@ -118,6 +120,7 @@ class CrashReportActivity : ComponentActivity() {
                                     // not show up in the clipboard preview.
                                     copySensitive(context, details, "aether-crash")
                                     copied = true
+                                    AppLog.event("crash-report", "report copied to clipboard")
                                 },
                                 modifier = Modifier.weight(1f),
                             ) {
@@ -130,6 +133,7 @@ class CrashReportActivity : ComponentActivity() {
                             Button(
                                 onClick = {
                                     runCatching { crashFile.delete() }
+                                    AppLog.event("crash-report", "dismissed, report file deleted")
                                     finish()
                                 },
                                 modifier = Modifier.weight(1f),

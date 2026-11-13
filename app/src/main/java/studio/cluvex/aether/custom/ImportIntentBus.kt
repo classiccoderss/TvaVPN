@@ -33,6 +33,16 @@ object ImportIntentBus {
 
         /** A file (JSON, `.npvt`, or a QR-code image) opened or shared in. */
         data class FileUri(val uri: Uri) : Payload
+
+        /**
+         * A file opened or shared in that MainActivity already peeked and
+         * recognized as a settings backup (`BackupPage.isSettingsBackupFile`),
+         * not a proxy config - e.g. the user tapped their own exported
+         * `tvaVPN-settings.json` in a file manager. Routed to BackupPage
+         * instead of [FileUri]/CustomConfigsPage so it imports as settings
+         * instead of failing with "no proxy outbound found".
+         */
+        data class SettingsFileUri(val uri: Uri) : Payload
     }
 
     private val _pending = MutableStateFlow<Payload?>(null)

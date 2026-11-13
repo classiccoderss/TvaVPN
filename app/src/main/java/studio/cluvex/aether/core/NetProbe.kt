@@ -416,6 +416,35 @@ object NetProbe {
     }.getOrDefault(false)
 
     /**
+     * SOCKS5 CONNECT with a DOMAIN target (remote DNS) followed by a full TLS
+     * handshake with hostname verification — i.e. exactly what a real HTTPS
+     * request to [destHost] does, not just a generic "is the port open" probe.
+     *
+     * ROOT-CAUSE NOTE (TVA AI route flapping): [checkTcpViaProxy] only CONNECTs
+     * to a bare IP literal (`1.1.1.1`), which proves the tunnel can carry TCP at
+     * all but says nothing about whether THIS specific domain resolves and
+     * completes TLS through the current exit - DPI/SNI filtering and per-domain
+     * routing issues are keyed on the hostname, not the IP. That gap is what let
+     * the isolated Psiphon-only route for TVA AI report "ready" on a probe that
+     * always passed while the real Gemini request reset mid-response. Callers
+     * that need to know "can I actually reach generativelanguage.googleapis.com
+     * right now" must probe that, through the same DOMAIN+TLS path the real
+     * request will use.
+     */
+    fun checkTlsViaProxy(
+        socksHost: String,
+        socksPort: Int,
+        destHost: String,
+        destPort: Int,
+        timeoutMs: Int = 8000,
+    ): Boolean = runCatching {
+        socks5Connect(socksHost, socksPort, destHost, destPort, useDomain = true, timeoutMs).use { s ->
+            tlsWrap(s, destHost, destPort, timeoutMs).close()
+        }
+        true
+    }.getOrDefault(false)
+
+    /**
      * Resolves a name over SOCKS5 **UDP ASSOCIATE** — the exact path every app on
      * the device uses for DNS once the TUN is up.
      *

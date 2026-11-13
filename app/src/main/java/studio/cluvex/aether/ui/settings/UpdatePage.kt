@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import studio.cluvex.aether.BuildConfig
 import studio.cluvex.aether.R
+import studio.cluvex.aether.core.AppLog
 import studio.cluvex.aether.core.ChangelogFetcher
 import studio.cluvex.aether.core.UpdateChecker
 import studio.cluvex.aether.data.LanguagePrefs
@@ -48,6 +49,9 @@ import studio.cluvex.aether.ui.theme.AetherMint
  * verified it, hands it to the system installer. See [UpdateChecker]'s doc for
  * exactly what is and is not guaranteed about a downloaded build.
  */
+/** [AppLog] tag for everything logged from this page. */
+private const val LOG_TAG = "update"
+
 @Composable
 internal fun UpdatePage(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -73,17 +77,21 @@ internal fun UpdatePage(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     fun startCheck() {
         state = UpdateUiState.Checking
+        AppLog.event(LOG_TAG, "checking for update (current=${BuildConfig.VERSION_NAME})")
         scope.launch {
             when (val result = withContext(Dispatchers.IO) { UpdateChecker.checkForUpdate() }) {
                 is UpdateChecker.CheckResult.UpToDate -> {
+                    AppLog.event(LOG_TAG, "up to date (${result.currentVersion})")
                     changes = ChangesUi.Hidden
                     state = UpdateUiState.UpToDate(result.currentVersion)
                 }
                 is UpdateChecker.CheckResult.Available -> {
+                    AppLog.event(LOG_TAG, "update available: ${result.release.tag}")
                     state = UpdateUiState.Available(result.release)
                     loadChanges()
                 }
                 is UpdateChecker.CheckResult.Error -> {
+                    AppLog.event(LOG_TAG, "check failed: ${result.message}")
                     changes = ChangesUi.Hidden
                     state = UpdateUiState.Error(result.message)
                 }
@@ -93,6 +101,7 @@ internal fun UpdatePage(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     fun startDownload(release: UpdateChecker.ReleaseInfo) {
         state = UpdateUiState.Downloading(release, 0)
+        AppLog.event(LOG_TAG, "download started: ${release.tag}")
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 UpdateChecker.download(context, release) { pct ->
@@ -102,17 +111,24 @@ internal fun UpdatePage(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 }
             }
             when (result) {
-                is UpdateChecker.DownloadResult.Error -> state = UpdateUiState.Error(result.message)
+                is UpdateChecker.DownloadResult.Error -> {
+                    AppLog.event(LOG_TAG, "download failed: ${result.message}")
+                    state = UpdateUiState.Error(result.message)
+                }
                 is UpdateChecker.DownloadResult.Ok -> {
+                    AppLog.event(LOG_TAG, "download OK, verifying before install")
                     when (val verify = withContext(Dispatchers.IO) {
                         UpdateChecker.verifyBeforeInstall(context, result.file)
                     }) {
-                        is UpdateChecker.VerifyResult.Rejected ->
+                        is UpdateChecker.VerifyResult.Rejected -> {
+                            AppLog.event(LOG_TAG, "downloaded build REJECTED: ${verify.reason}")
                             state = UpdateUiState.Error(
                                 context.getString(R.string.update_err_rejected, verify.reason),
                             )
+                        }
                         UpdateChecker.VerifyResult.Ok -> {
                             val hashMatches = release.publishedSha256?.let { it == result.sha256 }
+                            AppLog.event(LOG_TAG, "verified OK, ready to install (sha256 matches published=$hashMatches)")
                             state = UpdateUiState.ReadyToInstall(result.file, release, hashMatches)
                         }
                     }
@@ -123,9 +139,11 @@ internal fun UpdatePage(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     fun install(file: File) {
         if (!UpdateChecker.canInstallUnknownApps(context)) {
+            AppLog.event(LOG_TAG, "install blocked: \"install unknown apps\" permission missing - opening settings")
             UpdateChecker.openUnknownSourcesSettings(context)
             return
         }
+        AppLog.event(LOG_TAG, "handing downloaded build to the system installer")
         UpdateChecker.install(context, file)
     }
 

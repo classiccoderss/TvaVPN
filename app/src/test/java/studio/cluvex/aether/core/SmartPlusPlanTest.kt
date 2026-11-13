@@ -198,6 +198,7 @@ class SmartPlusPlanTest {
         assertTrue(applied.fragment)
         assertTrue(applied.ech)
         assertEquals(Protocol.WIREGUARD, applied.protocol)
+        assertTrue("AUTO enables cached-endpoint quality validation", applied.fastEndpointOnly)
         assertEquals("a lane always scans in TURBO", ScanMode.TURBO, applied.scanMode)
         assertEquals(19_819, applied.bindOverride)
         assertEquals(19_819, applied.bindPort)

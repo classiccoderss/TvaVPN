@@ -100,8 +100,8 @@ object PsiphonBootstrap {
      * skipped when unchanged) to run on every connect, which also means a system CA
      * update is picked up on the next session.
      */
-    fun prepare(context: Context) {
-        val dir = dir(context.filesDir).apply { mkdirs() }
+    fun prepare(context: Context, filesDir: File = context.filesDir) {
+        val dir = dir(filesDir).apply { mkdirs() }
         runCatching { writeCaBundle(File(dir, CA_BUNDLE)) }
             .onFailure { DiagnosticsLog.w(TAG, "Could not export the system CA store for Psiphon: ${it.message}") }
         runCatching { copyServerList(context, File(dir, SERVER_LIST)) }
@@ -123,20 +123,39 @@ object PsiphonBootstrap {
     internal fun resolvers(context: Context): List<String> =
         (deviceResolvers(context) + PUBLIC_RESOLVERS).distinct().take(MAX_RESOLVERS)
 
-    /** IPv4 resolvers of the active, non-VPN network, as Android reports them. */
+    /** IPv4 resolvers from the best available non-VPN network. */
     private fun deviceResolvers(context: Context): List<String> = runCatching {
         val cm = context.getSystemService(ConnectivityManager::class.java)
             ?: return@runCatching emptyList<String>()
-        val network = cm.activeNetwork ?: return@runCatching emptyList<String>()
-        // A VPN link's resolvers are OUR tunnel's; Psiphon dials outside it.
-        if (cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) {
-            return@runCatching emptyList<String>()
-        }
-        cm.getLinkProperties(network)?.dnsServers
-            ?.filterIsInstance<Inet4Address>()
-            ?.mapNotNull { it.hostAddress }
-            ?.filter { it.isNotBlank() && !it.startsWith("127.") }
-            .orEmpty()
+
+        // With TVA's main tunnel already active, activeNetwork normally points at
+        // our VPN interface. The AI route is deliberately independent, so it must
+        // not inherit DNS servers advertised by that VPN interface. Search the
+        // available physical networks and prefer one Android has validated.
+        val candidates = buildList {
+            cm.activeNetwork?.let { add(it) }
+            cm.allNetworks.forEach { if (it !in this) add(it) }
+        }.mapNotNull { network ->
+            val caps = cm.getNetworkCapabilities(network) ?: return@mapNotNull null
+            if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) ||
+                !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            ) return@mapNotNull null
+            val dns = cm.getLinkProperties(network)?.dnsServers
+                ?.filterIsInstance<Inet4Address>()
+                ?.mapNotNull { it.hostAddress }
+                ?.filter { it.isNotBlank() && !it.startsWith("127.") }
+                .orEmpty()
+            if (dns.isEmpty()) null else Triple(
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
+                dns,
+            )
+        }.sortedWith(
+            compareByDescending<Triple<Boolean, Boolean, List<String>>> { it.first }
+                .thenByDescending { it.second },
+        )
+
+        candidates.firstOrNull()?.third.orEmpty()
     }.getOrDefault(emptyList())
 
     /**
@@ -144,6 +163,34 @@ object PsiphonBootstrap {
      * which inherits it). Only names files that actually exist, so a failed
      * [prepare] degrades to upstream's behaviour instead of breaking the launch.
      */
+    /**
+     * Reaps only Psiphon child processes whose inherited AETHER_PSIPHON_DIR
+     * belongs to [filesDir]. This is deliberately scoped: the main VPN and the
+     * TVA AI side-route can run separate Psiphon instances at the same time.
+     */
+    fun reapOwnedPsiphon(filesDir: File) {
+        val expected = "AETHER_PSIPHON_DIR=${dir(filesDir).absolutePath}"
+        runCatching {
+            val self = android.os.Process.myPid()
+            File("/proc").listFiles()?.forEach { processDir ->
+                val pid = processDir.name.toIntOrNull() ?: return@forEach
+                if (pid == self) return@forEach
+                val command = runCatching { File(processDir, "cmdline").readText() }.getOrNull()
+                    ?: return@forEach
+                if (!command.contains("libpsiphon.so")) return@forEach
+                val environment = runCatching {
+                    File(processDir, "environ").readBytes().toString(Charsets.ISO_8859_1)
+                }.getOrNull() ?: return@forEach
+                if (environment.split('\u0000').any { it == expected }) {
+                    android.os.Process.killProcess(pid)
+                    DiagnosticsLog.i(TAG, "Stopped Psiphon child owned by ${dir(filesDir).name}.")
+                }
+            }
+        }.onFailure {
+            DiagnosticsLog.w(TAG, "Could not inspect owned Psiphon child processes: ${it.message}")
+        }
+    }
+
     fun env(filesDir: File): Map<String, String> = buildMap {
         val dir = dir(filesDir)
         val bundle = File(dir, CA_BUNDLE)

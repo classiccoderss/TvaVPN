@@ -107,6 +107,7 @@ class SecretStore(context: Context) {
          * [studio.cluvex.aether.core.TeamSignInRecord].
          */
         const val ACCESS_SIGNIN = "access_signin"
+        const val GEMINI_API_KEY = "gemini_api_key"
 
         private const val PROVIDER = "AndroidKeyStore"
         private const val KEY_ALIAS = "aether_secret_v1"

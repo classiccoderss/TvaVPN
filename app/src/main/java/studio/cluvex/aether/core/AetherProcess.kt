@@ -311,20 +311,9 @@ class AetherProcess(
         IdentityVault.sealAndShred(workingDir)
     }
 
-    /** Kills psiphon-tunnel-core processes of this app left behind by an earlier engine. */
+    /** Reaps only Psiphon children using this engine's own Psiphon datastore. */
     private fun reapPsiphonOrphans() {
-        runCatching {
-            val self = android.os.Process.myPid()
-            File("/proc").listFiles()?.forEach { dir ->
-                val pid = dir.name.toIntOrNull() ?: return@forEach
-                if (pid == self) return@forEach
-                val cmd = runCatching { File(dir, "cmdline").readText() }.getOrNull() ?: return@forEach
-                if (cmd.contains("libpsiphon.so")) {
-                    android.os.Process.killProcess(pid)
-                    DiagnosticsLog.w("engine", "Stopped a leftover Psiphon process ($pid).")
-                }
-            }
-        }
+        PsiphonBootstrap.reapOwnedPsiphon(workingDir)
     }
 
     private companion object {

@@ -236,9 +236,34 @@ object PingMonitor {
      * SOCKS5 listener of the running engine, so the number reflects the
      * tunnel's real end-to-end latency; when false it connects directly and
      * shows the operator's latency instead.
+     *
+     * BUG FIXED: two independent callers share this single probe - the UI's
+     * "every 4 s while the card is visible" refresh in [ConnectionCard], and
+     * Connection Guardian's "once per watchdog wake-up" quality sample in
+     * [studio.cluvex.aether.vpn.AetherVpnService]. [mutex] makes sure they
+     * never measure at the same time, but the loser used to be silently
+     * dropped: it returned immediately while [state] still held whatever the
+     * WINNER last published - which, from the loser's point of view, is a
+     * stale reading from a previous cycle, not a fresh one.
+     *
+     * That stale value was then fed straight into [ConnectionQuality.record],
+     * which cannot tell "no new sample" from "a new sample that happens to
+     * match the old one". A single genuinely slow reading could therefore be
+     * counted several watchdog cycles in a row - once for real, then again
+     * every time the UI's own refresh happened to win the race - crossing
+     * [studio.cluvex.aether.vpn.AetherVpnService]'s `QUALITY_BAD_CYCLES`
+     * threshold (or, on the custom-config path, flipping quality to POOR and
+     * tearing the whole session down for auto-select) on a tunnel that was
+     * never actually that bad. That is the "ping goes bad and it reconnects a
+     * bit late" symptom: Guardian reacting to the SAME sample more than once.
+     *
+     * Now the return value tells a caller whether it actually measured
+     * anything this call. Callers that only act on fresh data (Guardian's
+     * quality monitor) must skip the cycle entirely when this returns false,
+     * rather than re-reading [state] and treating a leftover value as new.
      */
-    suspend fun pingOnce(viaTunnel: Boolean) {
-        if (!mutex.tryLock()) return
+    suspend fun pingOnce(viaTunnel: Boolean): Boolean {
+        if (!mutex.tryLock()) return false
         try {
             _state.value = PingResult(running = true)
             val ms = withContext(Dispatchers.IO) { measure(viaTunnel) }
@@ -246,6 +271,7 @@ object PingMonitor {
         } finally {
             mutex.unlock()
         }
+        return true
     }
 
     /**

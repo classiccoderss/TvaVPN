@@ -144,6 +144,7 @@
                 <data android:scheme="hysteria" />
                 <data android:scheme="hy" />
                 <data android:scheme="npvt" />
+                <data android:scheme="npvs" />
             </intent-filter>
 
             <!-- 2) A config file opened from a file manager with a MIME type the
@@ -155,32 +156,148 @@
                 <data android:scheme="file" android:mimeType="application/json" />
             </intent-filter>
 
-            <!-- 3) A `.npvt` file. Android has no registered MIME type for this
-                 extension, so most file managers hand it over as
+            <!-- 3) A `.npvt` or `.npvs` file (a single server vs. a NapsternetV
+                 subscription bundle - same NPVT1/NPVTSUB1 container, see
+                 NpvtCodec). Android has no registered MIME type for either
+                 extension, so most file managers hand them over as
                  application/octet-stream or leave the type empty - matching by
                  mimeType alone would miss it. mimeType="*/*" + pathPattern is the
-                 standard workaround for a custom, unregistered extension. -->
+                 standard workaround for a custom, unregistered extension.
+
+                 BUG FIX (tvaVPN): android:pathPattern is NOT a real regex - it's
+                 Android's limited "simple glob" matcher, where "." means "any one
+                 character" and a following "*" means "repeat the preceding
+                 character 0+ times". A single ".*\\.npvt" pattern only reliably
+                 matches a path with ONE dot before the extension; a file name
+                 with more than one dot ("my config v1.2.npvt", or a duplicate
+                 download renamed "config (1).2.npvt") falls through and the app
+                 silently drops out of the chooser for that specific file - this
+                 is a long-documented AOSP PatternMatcher limitation, not
+                 something fixable by changing the pattern's "syntax". The
+                 standard workaround, used below, is repeating the pattern with
+                 an extra ".*\\." for each additional dot we want to tolerate. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="content" />
-                <data android:scheme="file" />
-                <data android:mimeType="*/*" />
-                <data android:host="*" />
-                <data android:pathPattern=".*\\.npvt" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\.npvt" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\.npvt" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\..*\\.npvt" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\..*\\..*\\.npvt" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\.npvs" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\.npvs" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\..*\\.npvs" />
+                <data
+                    android:scheme="content"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\..*\\..*\\.npvs" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\.npvt" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\.npvt" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\..*\\.npvt" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\..*\\..*\\.npvt" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\.npvs" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\.npvs" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\..*\\.npvs" />
+                <data
+                    android:scheme="file"
+                    android:host="*"
+                    android:mimeType="*/*"
+                    android:pathPattern=".*\\..*\\..*\\..*\\.npvs" />
             </intent-filter>
 
             <!-- 4) Shared INTO the app from somewhere else (Share sheet): a
                  pasted/forwarded config as text, a config file as JSON, or a
                  screenshot/photo of a QR code - ConfigImporter.fromImage already
                  decodes those, this just gives it a way in besides the in-app
-                 picker. -->
+                 picker.
+
+                 BUG FIX (tvaVPN): this list had no entry at all for `.npvt` /
+                 `.npvs` files. ACTION_VIEW (tapping a file in a file manager)
+                 was covered above, but ACTION_SEND (using that file's own
+                 "Share" button in Telegram, Drive, a file manager, ...) was not -
+                 the sending app reports an unrecognised extension as
+                 "application/octet-stream" (the standard fallback for any file
+                 type Android has no registered MIME type for), and since that
+                 exact type was never declared here, tvaVPN never appeared in the
+                 share sheet for its own config files, only for plain text/JSON/
+                 images. octet-stream is intentionally narrow (not "*/*"): a
+                 wildcard here would put tvaVPN in the share sheet for every
+                 file of any kind, including ones it can't do anything with. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
                 <data android:mimeType="application/json" />
                 <data android:mimeType="image/*" />
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
 

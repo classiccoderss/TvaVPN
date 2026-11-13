@@ -79,6 +79,7 @@ import studio.cluvex.aether.core.HevTunnel
 import studio.cluvex.aether.core.IpEndpoint
 import studio.cluvex.aether.model.TransportBackend
 import studio.cluvex.aether.core.NetProbe
+import studio.cluvex.aether.core.ConnectionQuality
 import studio.cluvex.aether.core.PingMonitor
 import studio.cluvex.aether.core.ShareBridge
 import studio.cluvex.aether.ui.theme.AetherGlowCyan
@@ -89,6 +90,7 @@ import studio.cluvex.aether.ui.theme.CardSurfaceTop
 import studio.cluvex.aether.ui.theme.CardTextDim
 import studio.cluvex.aether.ui.theme.CardTextMuted
 import studio.cluvex.aether.ui.theme.CardTextPrimary
+import studio.cluvex.aether.ui.theme.AetherAmber
 
 /**
  * The connection screen's two content blocks (rewritten for 1.6.0).
@@ -207,6 +209,7 @@ fun ConnectionDetails(
     val stats = rememberTrafficStats(connectedSince = connectedSince, connected = connected)
     val meta by EngineMeta.state.collectAsState()
     val ping by PingMonitor.state.collectAsState()
+    val quality by ConnectionQuality.quality.collectAsState()
 
     // Live latency: one cheap handshake through the tunnel every few seconds.
     LaunchedEffect(connected) {
@@ -339,6 +342,15 @@ fun ConnectionDetails(
                         maxLines = 1,
                     )
                 }
+            }
+            if (connected && quality == ConnectionQuality.Quality.POOR) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.quality_degraded),
+                    fontSize = 11.sp,
+                    color = AetherAmber,
+                    maxLines = 1,
+                )
             }
         }
     }

@@ -37,7 +37,8 @@ class NpvtPasswordException(val wrong: Boolean) : IllegalArgumentException(
  *    `wireguard://` / `wg://` - one per line, any number of them;
  *  * a base64 subscription body holding such links;
  *  * an Xray / V2Ray JSON config (its proxy outbound is used) or a bare outbound;
- *  * a NapsternetV `.npvt` file (`NPVT1...`), also as `npvt://<base64 or text>`.
+ *  * a NapsternetV `.npvt` single-server file (`NPVT1...`) or `.npvs`
+ *    subscription bundle (`NPVTSUB1...`), also as `npvt://`/`npvs://<base64 or text>`.
  *
  * Pure Kotlin on purpose (no Android types), so every rule here is covered by
  * plain JVM unit tests.
@@ -51,6 +52,14 @@ object ConfigParser {
         "vless://", "vmess://", "trojan://", "ss://", "socks://", "socks5://", "wireguard://", "wg://",
         "hysteria2://", "hy2://", "hysteria://", "hy://",
     )
+
+    /**
+     * `npvt://` wraps a single-server NapsternetV config (`NPVT1...`), `npvs://`
+     * a subscription bundle of several (`NPVTSUB1...`, see [NpvtCodec]) - same
+     * encrypted container either way, only the header differs, so both schemes
+     * are handled identically here.
+     */
+    private val NPVT_LINK_SCHEMES = listOf("npvt://", "npvs://")
 
     fun isShareLink(text: String): Boolean {
         val t = cleanInput(text).lowercase()
@@ -121,11 +130,12 @@ object ConfigParser {
         val text = cleanInput(input)
         if (text.isEmpty()) throw ConfigImportException("empty input")
 
-        if (text.lowercase().startsWith("npvt://")) {
-            val body = text.substring("npvt://".length).trim()
+        val npvtScheme = NPVT_LINK_SCHEMES.firstOrNull { text.lowercase().startsWith(it) }
+        if (npvtScheme != null) {
+            val body = text.substring(npvtScheme.length).trim()
             val decoded = decodeLoose(body)?.takeIf { NpvtCodec.looksLike(it) }
                 ?: runCatching { URLDecoder.decode(body, "UTF-8") }.getOrNull()?.takeIf { NpvtCodec.looksLike(it) }
-                ?: throw ConfigImportException("npvt link does not contain an npvt config")
+                ?: throw ConfigImportException("${npvtScheme.removeSuffix("://")} link does not contain an npvt config")
             return parseNpvt(decoded, source, npvtTables(), npvtPassword, now)
         }
         // Named before anything else tries to read it as a subscription URL, so

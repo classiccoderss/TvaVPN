@@ -25,13 +25,20 @@ internal object CustomConfigTestSupport {
      * `base64(nonce || AES-CTR(plaintext))`. CTR is symmetric, so the app's own
      * [NpvtCodec.Tables.ctr] encrypts as well as it decrypts.
      */
-    fun npvt(servers: String, lock: String, version: Int = 1): String {
+    fun npvt(servers: String, lock: String, version: Int = 1): String =
+        npvtContainer(NpvtCodec.HEADER, servers, lock, version)
+
+    /** Same container as [npvt], just under the subscription header (`.npvs`, several servers at once). */
+    fun npvs(servers: String, lock: String, version: Int = 1): String =
+        npvtContainer(NpvtCodec.SUB_HEADER, servers, lock, version)
+
+    private fun npvtContainer(header: String, servers: String, lock: String, version: Int): String {
         fun part(plain: String, seed: Int): String {
             val nonce = ByteArray(16) { (it * 7 + seed).toByte() }
             val cipher = tables.ctr(nonce + plain.toByteArray(Charsets.UTF_8))
             return Base64.getEncoder().encodeToString(nonce + cipher)
         }
-        return "NPVT1\n" + listOf(part(version.toString(), 1), part(servers, 2), part(lock, 3)).joinToString(",")
+        return "$header\n" + listOf(part(version.toString(), 1), part(servers, 2), part(lock, 3)).joinToString(",")
     }
 
     fun npvtServer(name: String, lock: String): String =

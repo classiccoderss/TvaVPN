@@ -13,6 +13,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import studio.cluvex.aether.core.DiagnosticsLog
@@ -42,6 +43,10 @@ object CustomConfigStore {
          * next-fastest instead of just reporting an error. See [promoteBest].
          */
         val autoSelect: Boolean = false,
+        /** Clean-IP scan (1.11.0): how many candidates one scan tries. */
+        val cleanIpDepth: Int = 50,
+        /** Comma/newline-separated CIDR blocks or bare IPs; blank = CleanIpScanner.DEFAULT_RANGES. */
+        val cleanIpRange: String = "",
     ) {
         val active: CustomConfig? get() = configs.firstOrNull { it.id == activeId }
 
@@ -89,6 +94,42 @@ object CustomConfigStore {
         s.copy(configs = s.configs.map { if (it.id == config.id) config else it })
     }
 
+    /**
+     * Clean-IP scan (1.11.0): swaps the stored config's server ADDRESS and PORT to
+     * [ip]:[port], leaving everything else in its outbound JSON - above all the TLS
+     * `serverName` (SNI), which is what actually ties the connection to the real
+     * host - exactly as it was. Works across every protocol this app imports,
+     * because [ConfigParser] always stores the address the same way
+     * (`settings.servers[0].address`/`port`), regardless of which protocol it is.
+     * Returns the updated config, or null when [configId] no longer exists or its
+     * outbound could not be parsed.
+     */
+    fun applyCleanIp(context: Context, configId: String, ip: String, port: Int): CustomConfig? {
+        val current = load(context).configs.firstOrNull { it.id == configId } ?: return null
+        val outboundRoot = runCatching { Json.parseToJsonElement(current.outbound) as? JsonObject }
+            .getOrNull() ?: return null
+        val settings = outboundRoot["settings"] as? JsonObject ?: return null
+        val servers = settings["servers"] as? JsonArray ?: return null
+        val server = servers.firstOrNull() as? JsonObject ?: return null
+        val newServer = JsonObject(
+            server.toMutableMap().apply {
+                put("address", JsonPrimitive(ip))
+                put("port", JsonPrimitive(port))
+            },
+        )
+        val newSettings = JsonObject(
+            settings.toMutableMap().apply {
+                put("servers", JsonArray(listOf(newServer) + servers.drop(1)))
+            },
+        )
+        val newOutbound = JsonObject(
+            outboundRoot.toMutableMap().apply { put("settings", newSettings) },
+        ).toString()
+        val updated = current.copy(outbound = newOutbound, server = ConfigParser.hostPort(ip, port))
+        replace(context, updated)
+        return updated
+    }
+
     fun delete(context: Context, id: String): State = update(context) { s ->
         val rest = s.configs.filterNot { it.id == id }
         val active = if (s.activeId == id) null else s.activeId
@@ -106,6 +147,9 @@ object CustomConfigStore {
 
     fun setAutoSelect(context: Context, value: Boolean): State =
         update(context) { it.copy(autoSelect = value) }
+
+    fun setCleanIpSettings(context: Context, depth: Int, range: String): State =
+        update(context) { it.copy(cleanIpDepth = depth.coerceIn(1, 2000), cleanIpRange = range.trim()) }
 
     @Synchronized
     private fun update(context: Context, change: (State) -> State): State {
@@ -130,6 +174,8 @@ object CustomConfigStore {
         put("mode", s.mode.name)
         put("enabled", s.enabled)
         put("autoSelect", s.autoSelect)
+        put("cleanIpDepth", s.cleanIpDepth)
+        put("cleanIpRange", s.cleanIpRange)
         put("configs", buildJsonArray {
             s.configs.forEach { c ->
                 add(buildJsonObject {
@@ -157,6 +203,7 @@ object CustomConfigStore {
         fun JsonObject.s(k: String) = (this[k] as? JsonPrimitive)?.contentOrNull
         fun JsonObject.b(k: String) = (this[k] as? JsonPrimitive)?.booleanOrNull ?: false
         fun JsonObject.l(k: String) = (this[k] as? JsonPrimitive)?.longOrNull ?: 0L
+        fun JsonObject.i(k: String) = (this[k] as? JsonPrimitive)?.intOrNull ?: 50
         val configs = (o["configs"] as? JsonArray).orEmpty().mapNotNull { e ->
             val c = e as? JsonObject ?: return@mapNotNull null
             CustomConfig(
@@ -183,6 +230,8 @@ object CustomConfigStore {
             mode = ChainMode.fromStoredName(o.s("mode")),
             enabled = o.b("enabled") && active != null,
             autoSelect = o.b("autoSelect"),
+            cleanIpDepth = o.i("cleanIpDepth"),
+            cleanIpRange = o.s("cleanIpRange").orEmpty(),
         )
     }
 

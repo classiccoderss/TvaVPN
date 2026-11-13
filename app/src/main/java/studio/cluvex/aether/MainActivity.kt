@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import studio.cluvex.aether.core.AetherController
+import studio.cluvex.aether.core.AppLog
 import studio.cluvex.aether.core.IpEndpoint
 import studio.cluvex.aether.core.NetProbe
 import studio.cluvex.aether.core.PortLease
@@ -45,6 +46,7 @@ import studio.cluvex.aether.ui.HomeScreen
 import studio.cluvex.aether.ui.LoginCodeDialog
 import studio.cluvex.aether.ui.OnboardingScreen
 import studio.cluvex.aether.ui.StartupUpdateDialog
+import studio.cluvex.aether.ui.settings.isSettingsBackupFile
 import studio.cluvex.aether.ui.theme.AetherTheme
 import java.io.File
 
@@ -83,6 +85,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        AppLog.event(LOG_TAG, "onNewIntent: action=${intent.action}")
         handleIncomingIntent(intent)
     }
 
@@ -90,26 +93,35 @@ class MainActivity : ComponentActivity() {
      * Turns the raw intent the system handed this activity into an
      * [ImportIntentBus.Payload], when it is one of the external-import cases
      * the manifest's VIEW/SEND filters declare. Everything after this is
-     * CustomConfigsPage's job (see ImportIntentBus) - this only extracts the
-     * text or the file Uri, nothing here parses or imports a config itself.
+     * CustomConfigsPage's (or, for a settings file, BackupPage's) job - see
+     * ImportIntentBus - this only extracts the text or the file Uri, nothing
+     * here parses or imports a config itself; [fileUriPayload] is the one
+     * exception, a cheap peek just to tell the two JSON shapes apart.
      */
     private fun handleIncomingIntent(intent: Intent) {
-        val payload: ImportIntentBus.Payload? = when (intent.action) {
+        when (intent.action) {
             Intent.ACTION_VIEW -> intent.data?.let { uri ->
                 if (uri.scheme?.lowercase() in CONFIG_LINK_SCHEMES) {
                     // vmess:// / vless:// / npvt:// / ... - the URI itself is the
                     // config text, not a file to open.
-                    ImportIntentBus.Payload.Text(uri.toString())
+                    AppLog.event(LOG_TAG, "VIEW intent: config link (scheme=${uri.scheme})")
+                    ImportIntentBus.post(ImportIntentBus.Payload.Text(uri.toString()))
                 } else {
                     // A content:// or file:// Uri from a file manager's "Open with".
-                    ImportIntentBus.Payload.FileUri(uri)
+                    AppLog.event(LOG_TAG, "VIEW intent: file Uri (scheme=${uri.scheme})")
+                    postFileUriPayload(uri)
                 }
-            }
+            } ?: AppLog.event(LOG_TAG, "VIEW intent with no data Uri - ignored")
             Intent.ACTION_SEND -> {
                 val type = intent.type.orEmpty()
                 if (type.startsWith("text/")) {
-                    intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
-                        ?.let { ImportIntentBus.Payload.Text(it) }
+                    val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
+                    if (text != null) {
+                        AppLog.event(LOG_TAG, "SEND intent: text/*, ${text.length} chars")
+                        ImportIntentBus.post(ImportIntentBus.Payload.Text(text))
+                    } else {
+                        AppLog.event(LOG_TAG, "SEND intent: text/* with no usable EXTRA_TEXT - ignored")
+                    }
                 } else {
                     @Suppress("DEPRECATION")
                     val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -117,12 +129,47 @@ class MainActivity : ComponentActivity() {
                     } else {
                         intent.getParcelableExtra(Intent.EXTRA_STREAM)
                     }
-                    uri?.let { ImportIntentBus.Payload.FileUri(it) }
+                    if (uri != null) {
+                        AppLog.event(LOG_TAG, "SEND intent: stream, type=$type")
+                        postFileUriPayload(uri)
+                    } else {
+                        AppLog.event(LOG_TAG, "SEND intent: type=$type, no EXTRA_STREAM - ignored")
+                    }
                 }
             }
-            else -> null
         }
-        if (payload != null) ImportIntentBus.post(payload)
+    }
+
+    /**
+     * A `.json` file can be this app's own settings backup (see
+     * [BackupPage.writeExport][studio.cluvex.aether.ui.settings.isSettingsBackupFile])
+     * or a custom proxy config - both are plain JSON, so the file's own
+     * content, not its name or MIME type, is what tells them apart. Without
+     * this check a settings file opened from outside the app (tapped in a
+     * file manager, shared in) always landed on CustomConfigsPage, which
+     * rejected it as "the JSON has no proxy outbound" - a valid file,
+     * misidentified.
+     *
+     * [isSettingsBackupFile] opens the Uri through the ContentResolver to peek
+     * at it, which for some senders (a cloud-backed file app, some chat apps)
+     * is a cross-process call that can stall. Doing that synchronously, still
+     * on the main thread, inside onCreate/onNewIntent - before the window has
+     * even drawn - risked losing that race on a cold start: ImportIntentBus
+     * only ever holds one pending payload, so a slow or re-entrant call here
+     * could post nothing, or post the wrong thing. Classifying off the main
+     * thread and posting only once the answer is actually known avoids that.
+     */
+    private fun postFileUriPayload(uri: Uri) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val isSettingsFile = isSettingsBackupFile(this@MainActivity, uri)
+            val payload = if (isSettingsFile) {
+                ImportIntentBus.Payload.SettingsFileUri(uri)
+            } else {
+                ImportIntentBus.Payload.FileUri(uri)
+            }
+            AppLog.event(LOG_TAG, "incoming file classified as ${if (isSettingsFile) "settings backup" else "proxy config"}")
+            ImportIntentBus.post(payload)
+        }
     }
 
     /**
@@ -164,6 +211,7 @@ class MainActivity : ComponentActivity() {
 
     private val vpnPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            AppLog.event(LOG_TAG, "VPN consent dialog result: ${if (result.resultCode == RESULT_OK) "granted" else "denied"}")
             if (result.resultCode == RESULT_OK) {
                 pendingProfile?.let { AetherController.connect(this, it) }
             }
@@ -171,10 +219,13 @@ class MainActivity : ComponentActivity() {
         }
 
     private val notificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* best effort */ }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            AppLog.event(LOG_TAG, "notification permission result: $granted")
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppLog.event(LOG_TAG, "onCreate (freshInstance=${savedInstanceState == null})")
         // Before the first frame: the window has to agree with the language, or
         // Compose inherits an LTR decor view and lays Persian out backwards.
         pinLayoutDirection()
@@ -184,6 +235,7 @@ class MainActivity : ComponentActivity() {
         // modified or re-signed APK from anywhere but the official releases) gets
         // an error screen and nothing else - no profile load, no IP lookups.
         if (SignerIdentity.isBlocked(this)) {
+            AppLog.event(LOG_TAG, "signer check blocked this build - showing TamperScreen only")
             setContent {
                 AetherTheme {
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -241,6 +293,7 @@ class MainActivity : ComponentActivity() {
         // exception — open the saved crash report once so the user can see and
         // copy it. The report file deletes itself on dismiss.
         if (savedInstanceState == null && File(filesDir, AetherApp.CRASH_FILE).exists()) {
+            AppLog.event(LOG_TAG, "previous run left a crash report - opening CrashReportActivity")
             startActivity(Intent(this, CrashReportActivity::class.java))
         }
 
@@ -249,6 +302,7 @@ class MainActivity : ComponentActivity() {
         // consent dialog and then connects.
         if (intent?.getBooleanExtra(EXTRA_CONNECT_ON_LAUNCH, false) == true) {
             intent.removeExtra(EXTRA_CONNECT_ON_LAUNCH)
+            AppLog.event(LOG_TAG, "launched from Quick Settings tile with CONNECT_ON_LAUNCH")
             lifecycleScope.launch {
                 val current = AetherController.state.value
                 if (!current.isConnected && !current.isBusy) {
@@ -356,6 +410,7 @@ class MainActivity : ComponentActivity() {
                     if (!onboardingDone) {
                         OnboardingScreen(
                             onFinished = {
+                                AppLog.event(LOG_TAG, "onboarding finished")
                                 lifecycleScope.launch { onboardingStore.markCompleted() }
                             },
                         )
@@ -414,6 +469,7 @@ class MainActivity : ComponentActivity() {
         val pending = uiProfile.value ?: return
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
             runCatching { profileStore.save(pending) }
+                .onFailure { AppLog.event(LOG_TAG, "onStop: saving pending profile failed: ${it.javaClass.simpleName}") }
         }
     }
 
@@ -424,6 +480,9 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        /** [AppLog] tag for everything logged from this activity. */
+        private const val LOG_TAG = "main-activity"
+
         /** Set by the Quick Settings tile when it needs the consent dialog. */
         const val EXTRA_CONNECT_ON_LAUNCH = "studio.cluvex.aether.CONNECT_ON_LAUNCH"
 
@@ -445,7 +504,7 @@ class MainActivity : ComponentActivity() {
          * register tvaVPN for system-wide, so those still only import by paste.
          */
         private val CONFIG_LINK_SCHEMES = setOf(
-            "vmess", "vless", "trojan", "ss", "hysteria2", "hy2", "hysteria", "hy", "npvt",
+            "vmess", "vless", "trojan", "ss", "hysteria2", "hy2", "hysteria", "hy", "npvt", "npvs",
         )
     }
 }

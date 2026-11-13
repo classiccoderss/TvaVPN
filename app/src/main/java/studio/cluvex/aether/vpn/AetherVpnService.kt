@@ -1,6 +1,7 @@
 package studio.cluvex.aether.vpn
 
 import android.app.PendingIntent
+import android.app.AlarmManager
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
@@ -28,9 +29,11 @@ import studio.cluvex.aether.core.AetherController
 import studio.cluvex.aether.core.AetherProcess
 import studio.cluvex.aether.core.Diagnostics
 import studio.cluvex.aether.core.DiagnosticsLog
+import studio.cluvex.aether.core.GuardianPrefs
 import studio.cluvex.aether.core.EngineMeta
 import studio.cluvex.aether.core.AutoCandidate
 import studio.cluvex.aether.core.NetworkIdentity
+import studio.cluvex.aether.core.ConnectionQuality
 import studio.cluvex.aether.core.PingMonitor
 import studio.cluvex.aether.core.PortLease
 import studio.cluvex.aether.core.PortProbe
@@ -158,6 +161,9 @@ class AetherVpnService : VpnService() {
     /** Consecutive failed watchdog probes (1.2.4 stability watchdog). */
     private var probeFailures = 0
 
+    /** Consecutive severe-latency samples while the data path is otherwise idle. */
+    private var poorQualityCycles = 0
+
     /** One-shot guard for [registerSelfProbes]. */
     private var selfProbesRegistered = false
 
@@ -218,6 +224,7 @@ class AetherVpnService : VpnService() {
         )
         when (intent?.action) {
             ACTION_DISCONNECT -> {
+                cancelTaskRemovalRecovery()
                 // The user asked for the tunnel to go down: a later system restart
                 // of this service must not bring it back.
                 RuntimeFlag.setWantConnected(applicationContext, false)
@@ -232,6 +239,26 @@ class AetherVpnService : VpnService() {
                     else -> stopEverything()
                 }
                 return START_NOT_STICKY
+            }
+            ACTION_RESTORE_AFTER_TASK_REMOVED -> {
+                if (!RuntimeFlag.wantConnected(applicationContext)) {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+                DiagnosticsLog.w(TAG, "OEM task-swipe recovery alarm fired; restoring the saved VPN session.")
+                scope.launch {
+                    val saved = runCatching {
+                        ProfileStore(applicationContext).profile.first()
+                    }.getOrNull()
+                    if (saved != null && RuntimeFlag.wantConnected(applicationContext)) {
+                        startTunnel(saved)
+                    } else {
+                        stopForegroundCompat()
+                        stopSelf()
+                    }
+                }
+                return START_STICKY
             }
             else -> {
                 // TAMPER BLOCK: the tile, widget and boot paths reach the service
@@ -738,6 +765,7 @@ class AetherVpnService : VpnService() {
         // server rotation invalidates it. Dropping it here costs one dial and
         // stops the badge reporting a dead connection's timeout as latency.
         PingMonitor.reset()
+        ConnectionQuality.reset()
         AetherController.setState(ConnectionState.Connected("$SOCKS_HOST:$port"))
         updateNotification(getString(R.string.state_connected))
         DiagnosticsLog.i(
@@ -937,6 +965,7 @@ class AetherVpnService : VpnService() {
         EngineMeta.setProtocol(engineProfile.protocol.name)
         PingMonitor.setTunnelPort(frontPort)
         PingMonitor.reset()
+        ConnectionQuality.reset()
         AetherController.setState(ConnectionState.Connected("$SOCKS_HOST:$frontPort"))
         updateNotification(getString(R.string.state_connected))
         DiagnosticsLog.i(TAG, "${profile.backend.pipelineLabel} tunnel ready (exit = a Tor exit node).")
@@ -1336,6 +1365,7 @@ class AetherVpnService : VpnService() {
             val engine = AetherProcess(applicationInfo.nativeLibraryDir, filesDir)
             raceEngines.add(engine)
             try {
+                val tacticLaunchedAt = SystemClock.elapsedRealtime()
                 engine.start(profile)
                 val opened = PortProbe.awaitOpen(SOCKS_HOST, port, tactic.budgetMs) { engine.isAlive() }
                 if (!opened) {
@@ -1348,9 +1378,20 @@ class AetherVpnService : VpnService() {
                 }
                 // An open port is not a working proxy - the same gate the chained
                 // stage uses, and for the same reason.
+                // FIELD FIX (1.7.4): the engine never speaks SOCKS5 on ANY tactic
+                // until it has handshaked and proven the data plane end-to-end
+                // (see the native engine's "before exposing socks5" step) - WireGuard
+                // included, not just Tor. A single ~1.5s handshake attempt fires
+                // before that validation finishes on the RTTs this app actually
+                // sees, reads the still-closed pipe as "not SOCKS5", and kills a
+                // tactic that would have come up fine a couple of seconds later.
+                // Give it the rest of this tactic's own budget instead.
+                val handshakeGrace = (tacticLaunchedAt + tactic.budgetMs - SystemClock.elapsedRealtime())
+                    .coerceAtLeast(0L)
                 val carries = Diagnostics.runProxyStage(
                     host = SOCKS_HOST,
                     port = port,
+                    handshakeGraceMs = handshakeGrace,
                     alive = { engine.isAlive() },
                 )
                 if (!carries) {
@@ -1551,15 +1592,27 @@ class AetherVpnService : VpnService() {
             // handshake therefore gets the rest of THIS attempt's budget instead
             // of a single 4-second window -- the budget that was computed for the
             // bootstrap in the first place and that the open port used to skip
-            // straight past. Every other stage keeps the old single-shot gate.
+            // straight past.
             val torFronted = profile.backend.torMode.let {
                 it == TorMode.ONLY || it == TorMode.REVERSE
             }
-            val handshakeGrace = if (torFronted) {
+            // 1.7.4 FIELD FIX. "Every other stage keeps the old single-shot gate"
+            // above was wrong: it assumed a non-Tor stage 1 answers the instant its
+            // port is open. The native engine does not -- `run_wireguard_tunnel`
+            // deliberately holds SOCKS5 closed until it has handshaked AND proven
+            // the data plane end-to-end ("validating WireGuard tunnel ... before
+            // exposing socks5", up to AETHER_WG_VALIDATE_SECS, 10s by default), and
+            // on the RTTs this app actually sees that alone can run past the single
+            // ~1.5s handshake attempt the old gate allowed. The port-open log line
+            // fires the moment the listener exists, not the moment it is wired to a
+            // live tunnel, so that single attempt was reading "not yet validated" as
+            // "not SOCKS5" and discarding a strategy that would have come up a few
+            // seconds later. Every stage now gets the rest of this attempt's budget,
+            // the same way the Tor case always did; only the stall/abort behaviour
+            // below stays Tor-specific, because there is no bootstrap ticker to read
+            // for anything else.
+            val handshakeGrace =
                 (timeoutMs - (SystemClock.elapsedRealtime() - launchedAt)).coerceAtLeast(0L)
-            } else {
-                0L
-            }
             // Waiting minutes is only acceptable while something is happening. A
             // bootstrap that stops moving is what a network filtering Tor looks
             // like, and the user gets told that instead of watching a spinner.
@@ -1699,9 +1752,64 @@ class AetherVpnService : VpnService() {
                 // restart the engine only on SUSTAINED failure; see
                 // probeTunnelCycle() for why the bar is deliberately high.
                 if (engine?.isAlive() == true) {
+                    // Sample the real tunnel path on this existing watchdog wake-up.
+                    // The result is informational; Guardian's separate recovery policy remains intact.
+                    //
+                    // BUG FIX: PingMonitor is shared with the UI's own refresh timer, and
+                    // pingOnce() returns false (measuring nothing) when that refresh wins
+                    // the race. Skip this cycle's quality bookkeeping entirely then -
+                    // re-reading PingMonitor.state.value here would record the SAME old
+                    // sample again, double-counting one bad reading toward
+                    // poorQualityCycles across several cycles and triggering a restart
+                    // the tunnel's actual quality never earned. See PingMonitor.pingOnce.
+                    val freshPing = PingMonitor.pingOnce(viaTunnel = true)
+                    if (freshPing) ConnectionQuality.record(PingMonitor.state.value)
                     val dataPathMoving = dataPathIsMoving()
                     if (probeTunnelCycle()) {
                         probeFailures = 0
+                        // Continuous quality supervision: sample the real tunnel
+                        // path, not the device's direct network. A single spike is
+                        // ignored; recovery is attempted only after sustained,
+                        // extreme latency while the data path is idle. Restarting
+                        // during active transfers would make congestion worse.
+                        if (!freshPing) {
+                            // No new sample this cycle (lost the race to the UI's own
+                            // refresh) - PingMonitor.state.value is leftover from an
+                            // earlier cycle. Leave poorQualityCycles untouched rather
+                            // than counting that old reading again; see the BUG FIX
+                            // note above.
+                        } else if (!dataPathMoving && GuardianPrefs.isMonitoringEnabled(applicationContext)) {
+                            val latency = PingMonitor.state.value.ms
+                            if (latency >= QUALITY_BAD_LATENCY_MS) {
+                                poorQualityCycles++
+                                DiagnosticsLog.w(
+                                    TAG,
+                                    "Quality monitor: severe tunnel latency ${latency} ms " +
+                                        "($poorQualityCycles/$QUALITY_BAD_CYCLES).",
+                                )
+                                if (poorQualityCycles >= QUALITY_BAD_CYCLES) {
+                                    if (GuardianPrefs.isQualityRecoveryEnabled(applicationContext)) {
+                                        DiagnosticsLog.w(
+                                            TAG,
+                                            "Connection Guardian: sustained critical latency; restarting the engine to recover the route.",
+                                        )
+                                        engine?.stop()
+                                    } else {
+                                        DiagnosticsLog.w(TAG, "Connection Guardian: critical latency detected; automatic quality recovery is disabled.")
+                                    }
+                                    poorQualityCycles = 0
+                                }
+                            } else if (latency >= 0L) {
+                                if (poorQualityCycles > 0) {
+                                    DiagnosticsLog.i(TAG, "Quality monitor: tunnel latency recovered to ${latency} ms.")
+                                }
+                                poorQualityCycles = 0
+                            }
+                        } else {
+                            // Traffic is flowing: do not disrupt an active transfer
+                            // just because its queue temporarily raises measured RTT.
+                            poorQualityCycles = 0
+                        }
                     } else if (dataPathMoving) {
                         // Same rule as the chained watchdog: see the comment
                         // there. A tunnel that is moving bytes is not dead, and
@@ -2174,6 +2282,7 @@ class AetherVpnService : VpnService() {
 
         PingMonitor.setTunnelPort(port)
         PingMonitor.reset()
+        ConnectionQuality.reset()
         AetherController.setState(ConnectionState.Connected("$SOCKS_HOST:$port"))
         updateNotification(getString(R.string.state_connected))
         DiagnosticsLog.i(TAG, "Custom-config tunnel ready on $SOCKS_HOST:$port.")
@@ -2188,6 +2297,22 @@ class AetherVpnService : VpnService() {
                 break
             }
             if (SystemClock.elapsedRealtime() >= nextProbe) {
+                // Share the existing pipeline-probe cadence; no additional timer.
+                //
+                // BUG FIX: skip this cycle's quality record when PingMonitor lost the
+                // race to the UI's own refresh timer and measured nothing - otherwise
+                // the SAME old sample gets recorded again, which can flip quality to
+                // POOR purely from double-counting and tear down a perfectly healthy
+                // session for auto-select. See PingMonitor.pingOnce.
+                if (PingMonitor.pingOnce(viaTunnel = true)) {
+                    ConnectionQuality.record(PingMonitor.state.value)
+                }
+                if (ConnectionQuality.quality.value == ConnectionQuality.Quality.POOR &&
+                    CustomConfigStore.state.value.autoSelect
+                ) {
+                    DiagnosticsLog.w(TAG, "Connection quality is poor - auto-select will try a different config.")
+                    throw IllegalStateException(getString(R.string.cc_err_core_failed))
+                }
                 val moving = dataPathIsMoving()
                 if (probeTunnelCycle(port) || moving) {
                     pipelineDead = 0
@@ -2630,6 +2755,7 @@ class AetherVpnService : VpnService() {
             EngineMeta.reset()
             PingMonitor.resetTunnelPort()
             PingMonitor.reset()
+        ConnectionQuality.reset()
             // Back to the documented ports for the next session: a relocation is a
             // fact about one session's environment, not a setting.
             PortLease.reset()
@@ -2977,9 +3103,47 @@ class AetherVpnService : VpnService() {
      * the service and [onStartCommand] reconnects, see [RuntimeFlag].)
      */
     override fun onTaskRemoved(rootIntent: Intent?) {
-        DiagnosticsLog.i(TAG, "App removed from the recent-apps list - the tunnel keeps running.")
+        if (RuntimeFlag.wantConnected(applicationContext)) {
+            DiagnosticsLog.w(TAG, "App task swiped from recents; scheduling VPN recovery for aggressive OEM task killers.")
+            scheduleTaskRemovalRecovery()
+        } else {
+            DiagnosticsLog.i(TAG, "App task removed from recents while VPN is not requested.")
+        }
         super.onTaskRemoved(rootIntent)
     }
+
+    /**
+     * Xiaomi/HyperOS may kill the VPN service together with the launcher task,
+     * even though it is a foreground VPN service. Keep a system-owned alarm as a
+     * recovery path: unlike a Handler/coroutine it survives process death.
+     */
+    private fun scheduleTaskRemovalRecovery() {
+        runCatching {
+            val alarm = getSystemService(ALARM_SERVICE) as AlarmManager
+            val pending = taskRemovalRecoveryPendingIntent()
+            alarm.setAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + TASK_REMOVAL_RECOVERY_DELAY_MS,
+                pending,
+            )
+        }.onFailure {
+            DiagnosticsLog.e(TAG, "Could not schedule task-removal VPN recovery: ${it.javaClass.simpleName}: ${it.message}")
+        }
+    }
+
+    private fun cancelTaskRemovalRecovery() {
+        runCatching {
+            val alarm = getSystemService(ALARM_SERVICE) as AlarmManager
+            alarm.cancel(taskRemovalRecoveryPendingIntent())
+        }
+    }
+
+    private fun taskRemovalRecoveryPendingIntent(): PendingIntent = PendingIntent.getService(
+        this,
+        TASK_REMOVAL_RECOVERY_REQUEST,
+        Intent(this, AetherVpnService::class.java).setAction(ACTION_RESTORE_AFTER_TASK_REMOVED),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
 
     override fun onDestroy() {
         if (live === this) live = null
@@ -3051,6 +3215,9 @@ class AetherVpnService : VpnService() {
 
         const val ACTION_CONNECT = "studio.cluvex.aether.CONNECT"
         const val ACTION_DISCONNECT = "studio.cluvex.aether.DISCONNECT"
+        private const val ACTION_RESTORE_AFTER_TASK_REMOVED = "studio.cluvex.aether.RESTORE_AFTER_TASK_REMOVED"
+        private const val TASK_REMOVAL_RECOVERY_REQUEST = 7419
+        private const val TASK_REMOVAL_RECOVERY_DELAY_MS = 1_500L
         const val EXTRA_PROFILE = "profile"
 
         /**
@@ -3164,6 +3331,9 @@ class AetherVpnService : VpnService() {
          * failures - plenty of evidence, and roughly half the dead air.
          */
         private const val WATCHDOG_FAIL_CYCLES = 2
+        /** Only sustained extreme latency can trigger an automatic recovery. */
+        private const val QUALITY_BAD_LATENCY_MS = 4_000L
+        private const val QUALITY_BAD_CYCLES = 3
 
         /**
          * Attempts per watchdog check, rotating over anycast endpoints so one

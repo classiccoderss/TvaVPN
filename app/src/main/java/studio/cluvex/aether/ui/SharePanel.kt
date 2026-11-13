@@ -84,6 +84,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import studio.cluvex.aether.R
+import studio.cluvex.aether.core.AppLog
 import studio.cluvex.aether.core.ShareBridge
 import studio.cluvex.aether.core.ShareLeakGuard
 import studio.cluvex.aether.data.ShareCredentials
@@ -110,6 +111,9 @@ import studio.cluvex.aether.ui.theme.AetherMint
  * username/password lives in its own section. See [ShareBridge] and
  * [ShareLeakGuard] for the mechanics.
  */
+/** [AppLog] tag for everything logged from this panel. */
+private const val LOG_TAG = "share"
+
 @Composable
 fun SharePanel(
     state: ConnectionState,
@@ -210,6 +214,7 @@ fun SharePanel(
                         summary = stringResource(R.string.share_toggle_desc),
                         checked = profile.lanShare,
                         onChange = { on ->
+                            AppLog.event(LOG_TAG, "LAN share toggled ${if (on) "on" else "off"} (connected=${state.isConnected})")
                             onProfileChange(profile.copy(lanShare = on))
                             if (state.isConnected) {
                                 if (on) {
@@ -236,6 +241,7 @@ fun SharePanel(
                             selected = mode == ShareLeakGuard.Mode.HOME_WIFI,
                             detected = ShareLeakGuard.Mode.HOME_WIFI in available,
                             onClick = {
+                                AppLog.event(LOG_TAG, "share mode set: home Wi-Fi")
                                 scope.launch(Dispatchers.IO) {
                                     ShareCredentials.setMode(context, ShareLeakGuard.Mode.HOME_WIFI)
                                 }
@@ -249,6 +255,7 @@ fun SharePanel(
                             selected = mode == ShareLeakGuard.Mode.MOBILE_HOTSPOT,
                             detected = ShareLeakGuard.Mode.MOBILE_HOTSPOT in available,
                             onClick = {
+                                AppLog.event(LOG_TAG, "share mode set: mobile hotspot")
                                 scope.launch(Dispatchers.IO) {
                                     ShareCredentials.setMode(context, ShareLeakGuard.Mode.MOBILE_HOTSPOT)
                                 }
@@ -309,9 +316,11 @@ fun SharePanel(
                         password = proxyPassword,
                         recommend = mode == ShareLeakGuard.Mode.HOME_WIFI,
                         onToggle = { on ->
+                            AppLog.event(LOG_TAG, "share auth required toggled ${if (on) "on" else "off"}")
                             scope.launch(Dispatchers.IO) { ShareCredentials.setAuthRequired(context, on) }
                         },
                         onRotate = {
+                            AppLog.event(LOG_TAG, "share password rotated")
                             scope.launch {
                                 withContext(Dispatchers.IO) { ShareCredentials.rotate(context) }
                                 Toast.makeText(context, R.string.share_pass_rotated, Toast.LENGTH_SHORT).show()

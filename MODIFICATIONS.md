@@ -114,3 +114,32 @@
 ## 1.6.0 additions
 - Custom configs: Hysteria 2. `custom/ConfigParser.kt` (`hysteria2()`, schemes `hysteria2://`, `hy2://`; `hysteria://`, `hy://` refused; JSON `hysteria2` normalised to `hysteria`), `custom/XrayProcess.kt` (`binaryFor`: `libxray_hy.so` only for Hysteria outbounds), `custom/XrayConfigBuilder.kt` (`hasServer` accepts the flat `settings.address`), `scripts/build-natives.sh` (`build_xray_hy`, `XRAY_HY_VERSION`, SHA-256 check).
 - Tests: `app/src/test/.../custom/HysteriaLinkTest.kt`.
+
+## Smart Connection Guardian (2026-11-11)
+- Added a dedicated, localized Guardian settings page using the existing settings row and switch components so TalkBack receives the same role/state semantics as other settings.
+- Added persistent controls for tunnel quality monitoring and automatic recovery from sustained critical latency.
+- Kept the Guardian silent: no live-region announcements, speech prompts, or repeated notifications were added.
+- Existing dead-tunnel watchdog recovery remains active as a core safety behaviour; the new recovery switch controls only critical-latency route recovery.
+- Quality checks remain conservative: they run through the tunnel, ignore active data transfers, and require three consecutive critical samples before restarting the engine.
+
+
+## Automatic connection quality improvement (2026-11-11)
+- Smart AUTO / Smart Plus attempts now enable the engine's existing cached-endpoint quality gate even when the user has not enabled the optional manual setting. A cached WireGuard endpoint that answers but measures very slow (for example, the 5.84 s data-plane RTT in the supplied log) is no longer accepted blindly.
+- The engine performs its short TURBO scan and uses the existing RTT floor: it only replaces the cached endpoint if a genuinely faster candidate is found; otherwise it restores the just-verified cached endpoint. This avoids turning a working connection into a failed connection merely because a scan found nothing better.
+- Hand-picked protocols preserve the user's existing `fastEndpointOnly` preference. No UI elements, TalkBack announcements, or background notification behavior were added.
+
+
+## TVA AI integration (2026-11-12)
+- Added a first-class `TVA AI` destination to the home navigation drawer and the settings route stack.
+- Added Persian and English UI strings for per-user Gemini API credentials, model selection, connection testing, chat, settings review, proposals, apply/reconnect, undo, and TalkBack labels. Saving an empty key clears the stored credential; save verifies that the Android Keystore-backed secret can be read back.
+- Added runtime connection-state context to Gemini prompts without sending local SOCKS addresses or private exception details.
+- The Gemini REST client sends requests only through a local SOCKS5 port and uses remote-domain CONNECT for `generativelanguage.googleapis.com:443`; it does not silently fall back to the direct network.
+- AI proposals remain limited to the local nine-setting allow-list and require explicit confirmation. Undo restores the previous profile and re-connects only when the settings had previously been applied with a live reconnect.
+- Build/runtime verification remains pending; the Gradle 8.9 distribution is not present in the offline environment.
+
+## TVA AI: reuse the main tunnel instead of a separate route (2026-11-12)
+- Removed `AiPsiphonRouteManager` and the isolated Psiphon-only Aether process it owned (own loopback port, work directory, Psiphon state directory, scoped cleanup). AI traffic no longer starts any process or tunnel of its own.
+- `GeminiApiClient` now sends every request through the local SOCKS5 port of the user's already-connected main VPN tunnel (the same exit the rest of the app's traffic, and Gemini access itself, already relies on). `TvaAiPage.mainTunnelSocksPort()` reads that port from `ConnectionState.Connected.socksAddr`.
+- If the main VPN is not connected, TVA AI now reports a clear "connect to the VPN first" error (`tva_ai_vpn_not_connected`) instead of trying to bring up a route by itself.
+- `GeminiApiClient.RouteUnstableException` retry logic in `TvaAiPage` no longer rebuilds anything; it waits briefly and retries the same main-tunnel port, since there is nothing isolated left to tear down and recreate.
+- Updated the TVA AI system-prompt context (`TvaAiKnowledge`) and the `tva_ai_route_*` / added `tva_ai_vpn_not_connected` strings (English and Persian) to describe the main-tunnel route instead of a separate Psiphon side-route.

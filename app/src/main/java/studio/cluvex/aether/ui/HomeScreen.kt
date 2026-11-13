@@ -89,17 +89,24 @@ fun HomeScreen(
     // and competing for the same frame budget.
     var settingsRoute by remember { mutableStateOf<SettingsRoute?>(null) }
 
-    // EXTERNAL IMPORT (tvaVPN): a config was opened/shared into the app from
-    // outside (MainActivity posts it - see ImportIntentBus) and nothing else is
-    // currently open on top of the home screen, so jump straight to Custom
-    // configs; CustomConfigsPage itself picks up and runs the actual import
-    // once it is composed. If the user is already elsewhere in Settings, leave
-    // them there - the import stays queued in ImportIntentBus until they reach
-    // Custom configs on their own.
+    // EXTERNAL IMPORT (tvaVPN): a config - or the user's own exported settings
+    // file, see ImportIntentBus.Payload.SettingsFileUri - was opened/shared into
+    // the app from outside (MainActivity posts it - see ImportIntentBus) and
+    // nothing else is currently open on top of the home screen, so jump
+    // straight to whichever page actually handles that payload; that page
+    // itself picks up and runs the actual import once it is composed. If the
+    // user is already elsewhere in Settings, leave them there - the import
+    // stays queued in ImportIntentBus until they reach the right page on
+    // their own.
     val pendingImport by ImportIntentBus.pending.collectAsState()
     LaunchedEffect(pendingImport) {
-        if (pendingImport != null && settingsRoute == null) {
-            settingsRoute = SettingsRoute.CUSTOM_CONFIGS
+        val payload = pendingImport
+        if (payload != null && settingsRoute == null) {
+            settingsRoute = if (payload is ImportIntentBus.Payload.SettingsFileUri) {
+                SettingsRoute.BACKUP
+            } else {
+                SettingsRoute.CUSTOM_CONFIGS
+            }
         }
     }
 
@@ -173,6 +180,14 @@ fun HomeScreen(
                             icon = Icons.Rounded.Settings,
                             iconTint = AetherBlue,
                             onClick = { go(SettingsRoute.HOME) },
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            title = stringResource(R.string.tva_ai_title),
+                            summary = stringResource(R.string.tva_ai_nav_desc),
+                            icon = Icons.Rounded.AutoAwesome,
+                            iconTint = AetherViolet,
+                            onClick = { go(SettingsRoute.TVA_AI) },
                         )
                         RowDivider()
                         SettingsNavRow(

@@ -77,6 +77,28 @@
     <string name="diag_copy_redacted">Copy logs, addresses removed (safe to share)</string>
     <string name="diag_copied_redacted">Redacted logs copied — IPs and identifiers removed</string>
     <string name="diag_log_sealed">The log kept on this device is encrypted with a device key.</string>
+
+    <!-- App logs (AppLog): step-by-step events from UI flows across the whole
+         app (not the tunnel/connection log above) - a top-level Settings row,
+         not specific to any one screen. "App logs", plural: right above it in
+         this same list sits diag_title ("Diagnostics & logs"), which is about
+         the tunnel, so the two rows need to read as siblings, not as one
+         being a duplicate of the other. "App" is the word that does that -
+         this one is everything the app's own screens did, not the tunnel's
+         health - and applog_nav_desc spells out what "everything" covers for
+         anyone still unsure from the title alone. -->
+    <string name="applog_nav_title">App logs</string>
+    <string name="applog_nav_desc">What happened across the app - launches, config imports, updates, team sign-in, sharing and more (separate from the connection log)</string>
+    <string name="applog_title">App logs</string>
+    <string name="applog_copy">Copy log</string>
+    <string name="applog_copied">Log copied to clipboard</string>
+    <string name="applog_empty">Nothing logged yet</string>
+    <!-- "Show more": only the newest applog_page_size lines render at first
+         (this log can hold hundreds of lines, and tapping once for another
+         batch is the same shape as diag_view_logs elsewhere in Settings),
+         tapping it reveals the next-oldest batch, same size, until none are
+         left. %1$d is how many lines are still hidden. -->
+    <string name="applog_show_more">Show %1$d older lines</string>
     <!-- The log console moved to its own page so it is not buried under the
          checks and buttons above it, which made the copy buttons hard to find. -->
     <string name="diag_view_logs">View full log</string>
@@ -692,7 +714,9 @@
     <string name="cc_paste_clipboard">Paste from clipboard</string>
     <string name="cc_scan_prompt">Point the camera at a config QR code</string>
     <string name="cc_imported">%1$d config(s) added</string>
+    <string name="cc_imported_one">Added: %1$s</string>
     <string name="cc_import_failed">Could not import: %1$s</string>
+    <string name="cc_settings_file_detected">This is a tvaVPN settings file, not a config. Import it from Settings → Backup instead.</string>
     <string name="cc_qr_none">No QR code found</string>
     <string name="cc_password_title">Password</string>
     <string name="cc_password_desc">This NapsternetV config is password protected. Enter the password its author gave you.</string>
@@ -806,6 +830,23 @@
     <string name="cc_auto_select">Auto-select fastest</string>
     <string name="cc_auto_select_desc">After a speed test, switch to the fastest config that answered. If the active one fails to connect, try the next-fastest instead of just showing an error.</string>
     <string name="cc_group_subscriptions">Subscriptions</string>
+    <!-- Clean-IP scan (1.11.0) -->
+    <string name="clean_ip_action">Clean IP</string>
+    <string name="clean_ip_scan_tab">Scan clean IPs of this tab</string>
+    <string name="clean_ip_scan_tab_desc">Scans every eligible config, one after another</string>
+    <string name="clean_ip_settings">Clean IP settings</string>
+    <string name="clean_ip_footer">Finds a working Cloudflare address for a config whose server has been throttled or blocked, and replaces it automatically - the config\'s own host name (SNI) is never changed. Only configs that front a domain over TLS are eligible; Hysteria and REALITY configs are not.</string>
+    <string name="clean_ip_scanning">Scanning for “%1$s”…</string>
+    <string name="clean_ip_progress">Tested %1$d of %2$d</string>
+    <string name="clean_ip_remaining">%1$d more config(s) queued</string>
+    <string name="clean_ip_none">“%1$s”: no suitable IP was found. The current address was kept - try scanning again, or widen the range in Clean IP settings.</string>
+    <string name="clean_ip_found">“%1$s”: switched to %2$s (%3$d ms)</string>
+    <string name="clean_ip_ok">OK</string>
+    <string name="clean_ip_depth">How many addresses to try</string>
+    <string name="clean_ip_range">Custom IP range (optional)</string>
+    <string name="clean_ip_range_hint">104.16.0.0/13, 172.64.0.0/13</string>
+    <string name="clean_ip_range_desc">One or more CIDR blocks or addresses, separated by commas. Leave blank to use a built-in list of Cloudflare ranges.</string>
+    <string name="clean_ip_save">Save</string>
     <string name="cc_sub_empty">No subscriptions yet. Paste a subscription link above to add one.</string>
     <string name="cc_sub_refresh">Refresh</string>
     <string name="cc_sub_refresh_all">Refresh all subscriptions</string>
@@ -816,4 +857,85 @@
     <string name="cc_sub_last_ok">%1$d config(s) · updated %2$s</string>
     <string name="cc_sub_remove_title">Remove this subscription?</string>
     <string name="cc_sub_remove_body">“%1$s” and the configs it added will be removed. Configs you added by hand are kept.</string>
+
+    <string name="guardian_title">Smart Connection Guardian</string>
+    <string name="guardian_nav_desc">Quietly monitors tunnel health and can recover poor connections</string>
+    <string name="guardian_intro">Protects the active VPN tunnel without frequent announcements or unnecessary reconnects.</string>
+    <string name="guardian_group">MONITORING AND RECOVERY</string>
+    <string name="guardian_monitor_title">Monitor connection quality</string>
+    <string name="guardian_monitor_desc">Checks the real tunnel path periodically. A single slow response is ignored.</string>
+    <string name="guardian_recovery_title">Recover critical quality drops</string>
+    <string name="guardian_recovery_desc">Restarts the engine only after repeated critical latency while the data path is idle.</string>
+    <string name="guardian_safety_group">HOW IT BEHAVES</string>
+    <string name="guardian_safety_note">Guardian adds no extra popup or notification of its own, and normal connection and disconnection controls remain unchanged. Automatic recovery simply restarts the engine quietly in the background to rebuild the tunnel path. Dead-tunnel recovery remains part of the VPN service safety watchdog.</string>
+
+    <!-- TVA AI: Gemini assistant, routed through the already-connected main VPN tunnel. -->
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="tva_ai_title">TVA AI</string>
+    <string name="tva_ai_nav_desc">Your technical assistant for TVA settings and diagnostics</string>
+    <string name="tva_ai_subtitle">TVA technical assistant</string>
+    <string name="tva_ai_settings_title">TVA AI settings</string>
+    <string name="tva_ai_settings_nav_desc">Gemini API key, model, and connection test</string>
+    <string name="tva_ai_open_settings">Open TVA AI settings</string>
+    <string name="tva_ai_settings_required">Set up your Gemini API key in TVA AI settings before chatting.</string>
+    <string name="tva_ai_go_to_settings">Go to TVA AI settings</string>
+    <string name="tva_ai_ready_hint">Enter your Gemini API key, then test the connection.</string>
+    <string name="tva_ai_configuration">Gemini connection</string>
+    <string name="tva_ai_api_key">Gemini API key</string>
+    <string name="tva_ai_model">Model ID</string>
+    <string name="tva_ai_show_key">Show API key</string>
+    <string name="tva_ai_hide_key">Hide API key</string>
+    <string name="tva_ai_save">Save</string>
+    <string name="tva_ai_saved">API settings saved securely on this device.</string>
+    <string name="tva_ai_test">Test connection</string>
+    <string name="tva_ai_verified">Connection verified</string>
+    <string name="tva_ai_route_starting">Sending through your connected VPN…</string>
+    <string name="tva_ai_route_retrying">The VPN connection was unstable. Retrying…</string>
+    <string name="tva_ai_route_notice">TVA AI requests are sent through your main VPN connection, like the rest of the app\'s traffic. No separate route is opened. Google receives the prompts sent to Gemini; your API key quota and billing rules apply.</string>
+    <string name="tva_ai_vpn_not_connected">TVA AI needs an active VPN connection. Connect to the VPN first, then try again.</string>
+    <string name="tva_ai_missing_key">Enter your Gemini API key first.</string>
+    <string name="tva_ai_generic_error">TVA AI could not complete the request.</string>
+    <string name="tva_ai_response_received">Response received.</string>
+    <string name="tva_ai_message_hint">Write a message…</string>
+    <string name="tva_ai_send">Send message</string>
+    <string name="tva_ai_optimize">Review my settings</string>
+    <string name="tva_ai_optimize_prompt">Review my current TVA VPN settings and suggest only safe, evidence-based improvements. Do not apply anything yet.</string>
+    <string name="tva_ai_analyze_logs">Analyze connection log</string>
+    <string name="tva_ai_analyze_logs_prompt">Analyze the redacted connection log provided by the app. Separate observed facts from likely causes and give the most useful next step.</string>
+    <string name="tva_ai_welcome">Hello! I am TVA AI. I know the technical structure of this version of TVA VPN. You can ask me about settings, connection logs, protocols, or request a safe settings review.</string>
+    <string name="tva_ai_working">TVA AI is working…</string>
+    <string name="tva_ai_apply">Review and apply suggestion</string>
+    <string name="tva_ai_apply_title">Apply suggested settings?</string>
+    <string name="tva_ai_apply_connected_message">The VPN is connected. Applying these settings now requires restarting the main VPN tunnel. You can also save them for the next connection.</string>
+    <string name="tva_ai_apply_message">The validated settings will be saved for your next VPN connection.</string>
+    <string name="tva_ai_apply_later">Apply on next connection</string>
+    <string name="tva_ai_apply_reconnect">Apply and reconnect now</string>
+    <string name="tva_ai_applied_next_connect">Settings saved. They will be used on the next connection.</string>
+    <string name="tva_ai_reconnecting">Applying settings and restarting the VPN…</string>
+    <string name="tva_ai_reconnect_started">Settings applied. VPN reconnection has started.</string>
+    <string name="tva_ai_reconnect_timeout">The VPN did not finish disconnecting in time. The new settings were saved, but the active tunnel was not restarted.</string>
+    <string name="tva_ai_proposal_rejected">The suggestion was rejected by the local safety checks: %1$s</string>
+    <string name="tva_ai_undo">Undo applied settings</string>
+    <string name="tva_ai_undo_done">Previous settings restored.</string>
+    <string name="tva_ai_copy_proposal">Copy proposal details</string>
+    <string name="tva_ai_benefit_label">Possible benefit: %1$s</string>
+    <string name="tva_ai_tradeoff_label">Trade-off: %1$s</string>
+    <string name="tva_ai_confidence_label">Confidence: %1$d%%</string>
+    <string name="tva_ai_setting_mtu">MTU</string>
+    <string name="tva_ai_setting_protocol">Protocol</string>
+    <string name="tva_ai_setting_scan_mode">Scan mode</string>
+    <string name="tva_ai_setting_ip_version">IP version</string>
+    <string name="tva_ai_setting_noize">Noize profile</string>
+    <string name="tva_ai_setting_keepalive">Keepalive</string>
+    <string name="tva_ai_setting_fragment_preset">Fragmentation preset</string>
+    <string name="tva_ai_setting_quick_reconnect">Quick reconnect</string>
+    <string name="tva_ai_setting_fast_endpoint_only">Fast endpoint only</string>
+
+    <string name="tva_ai_model_invalid">Enter a valid Gemini model ID using English letters, numbers, dots, underscores, or hyphens.</string>
+    <string name="tva_ai_key_invalid">The API key contains unsupported characters. Check that it was copied correctly.</string>
+    <string name="tva_ai_key_save_failed">Android could not securely save the API key. Check device security storage and try again.</string>
+    <string name="tva_ai_key_cleared">The saved Gemini API key was removed from this device.</string>
+    <string name="tva_ai_undo_reconnect_started">Previous settings restored. VPN reconnection has started.</string>
+    <string name="quality_degraded">Connection quality has been poor for a while</string>
 </resources>

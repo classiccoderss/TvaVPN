@@ -60,7 +60,13 @@ import kotlin.math.min
  */
 internal object UplinkTuning {
     const val TICK_MS = 250L
-    const val PROBE_LOADED_MS = 400L
+
+    // 1.4.0-r4: tightened from 400 ms. Over a Psiphon chain the standing
+    // queue is a single shared SSH window, so every 150 ms of extra probe
+    // latency here is 150 ms more of ping-rise the user feels before the
+    // shaper even reacts. A faster loaded-probe cadence costs a few more
+    // tiny CONNECTs through the chain, which is cheap next to that.
+    const val PROBE_LOADED_MS = 250L
     const val PROBE_IDLE_MS = 3_000L
 
     /** Below this delivery rate a delay rise is not attributed to the uplink. */
@@ -72,15 +78,22 @@ internal object UplinkTuning {
     /** Above this the shaper is removed entirely. */
     const val OPEN_RATE_BPS = 6.0 * 1024 * 1024
 
-    const val TARGET_MIN_MS = 40.0
-    const val TARGET_MAX_MS = 250.0
+    // 1.4.0-r4: lowered from 40/250 ms. The old ceiling let the queue (and so
+    // the ping the user watches climb during an upload) grow by a quarter
+    // second before the controller would even consider it "over target".
+    // Tighter bounds mean the clamp engages on a shorter, shallower queue -
+    // a firmer hold on the link at the cost of a little more pacing on
+    // links with a high but clean baseline (jitter still sets a floor via
+    // `2 * jitterMs`, so a genuinely jittery-but-fat path is unaffected).
+    const val TARGET_MIN_MS = 30.0
+    const val TARGET_MAX_MS = 180.0
 
     /** Delay floor = min of this many recent samples (queue vs jitter). */
     const val FLOOR_SAMPLES = 4
 
     /** Probe fast for this long after start / a path change to learn the path. */
     const val LEARN_MS = 8_000L
-    const val TARGET_FRACTION = 0.25
+    const val TARGET_FRACTION = 0.18
 
     const val INCREASE = 1.03
     const val INCREASE_ADD_BPS = 1024.0
@@ -198,16 +211,37 @@ internal class UplinkRateController {
         recent.addLast(Sample(nowMs, rttMs, floor))
 
         overCount = if (delta > target) overCount + 1 else 0
+        // 1.4.0-r4: engage on the FIRST over-target sample once it is either
+        // already growing or clearly past target (was: wait for a second
+        // consecutive sample). Waiting for confirmation was the main source
+        // of the visible ping spike at the start of an upload - by the time
+        // two samples had confirmed it, the queue (and the user's ping) had
+        // already grown for another probe interval. `isLoaded` plus the
+        // growing/magnitude check still keep this off a clean, merely-high
+        // baseline; it only fires once the delay is actually rising.
         val engage = limited || fastDelta > 4 * target ||
-            (overCount >= 2 && (growing || delta > 3 * target))
+            (overCount >= 1 && (growing || delta > 2 * target))
         if (!limited) delta = max(delta, fastDelta)
 
         if (delta > target && isLoaded && engage && nowMs >= holdUntilMs) {
             val capacity = capacityEstimate(nowMs, floor, older, achievedBps)
-            val gain = if (delta < 4 * target) 0.9 else 0.5
+            // 1.4.0-r4: 0.85 / 0.5 (was 0.9 / 0.5, briefly 0.8 / 0.45 before
+            // measurement). Reacting on the FIRST over-target sample (above)
+            // already removes most of the standing queue on its own, so the
+            // cut itself no longer needs to be as deep to hit the same ping
+            // ceiling - and a shallower cut means the rate climbs back toward
+            // the link's real capacity sooner, which is where the actual
+            // upload/download throughput comes from. Simulating both against
+            // the project's own thin/fat-uplink cases: this keeps the queue
+            // at roughly half of the pre-1.4.0-r4 peak while delivering
+            // several percent more throughput than the deeper 0.8/0.45 cut.
+            val gain = if (delta < 4 * target) 0.85 else 0.5
             rateBps = max(UplinkTuning.MIN_RATE_BPS, capacity * gain)
             decreases++
-            holdUntilMs = nowMs + 800L
+            // 1.4.0-r4: shorter hold-off (was 800 ms) so a queue that is
+            // still building after the first cut gets a second one sooner
+            // instead of being allowed to grow for most of a second.
+            holdUntilMs = nowMs + 500L
         } else if (limited && isLoaded && delta < target / 2) {
             val step = if (delta < target / 4) 1.08 else UplinkTuning.INCREASE
             rateBps = rateBps * step + UplinkTuning.INCREASE_ADD_BPS

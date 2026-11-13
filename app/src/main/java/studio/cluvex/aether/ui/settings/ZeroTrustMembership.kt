@@ -50,6 +50,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import studio.cluvex.aether.R
 import studio.cluvex.aether.core.AccessToken
+import studio.cluvex.aether.core.AppLog
 import studio.cluvex.aether.core.IdentityVault
 import studio.cluvex.aether.core.TeamMembership
 import studio.cluvex.aether.core.TeamSignInHandoff
@@ -95,6 +96,9 @@ import studio.cluvex.aether.ui.theme.Navy850
  * the app's own process, and removing a membership under a running engine would
  * be undone by that engine writing its identity back.
  */
+/** [AppLog] tag for everything logged from this screen/flow. */
+private const val LOG_TAG = "zero-trust"
+
 @Composable
 internal fun ZeroTrustMembershipGroup(profile: ConnectionProfile, editable: Boolean) {
     val context = LocalContext.current
@@ -146,6 +150,7 @@ internal fun ZeroTrustMembershipGroup(profile: ConnectionProfile, editable: Bool
                     editable = editable,
                     onSignIn = { showSignIn = true },
                     onSignOut = {
+                        AppLog.event(LOG_TAG, "signed out of team")
                         scope.launch {
                             withContext(Dispatchers.IO) { TeamSignInStore(context).clear() }
                             refresh++
@@ -187,11 +192,13 @@ internal fun ZeroTrustMembershipGroup(profile: ConnectionProfile, editable: Bool
                             // Checked at the moment of the action, not when the
                             // row was drawn: a connect may have started since.
                             if (IdentityVault.running) {
+                                AppLog.event(LOG_TAG, "\"forget team\" blocked - a session is running")
                                 toast(context, context.getString(R.string.zt_forget_busy))
                             } else {
                                 withContext(Dispatchers.IO) {
                                     TeamMembership.forget(context.filesDir, team)
                                 }
+                                AppLog.event(LOG_TAG, "team membership forgotten")
                                 refresh++
                                 toast(context, context.getString(R.string.zt_forget_done))
                             }
@@ -337,13 +344,20 @@ private fun ServiceTokenRows(profile: ConnectionProfile, team: String, editable:
             val id = profile.accessClientId
             val secret = profile.accessClientSecret
             result = ServiceTest.Running
+            AppLog.event(LOG_TAG, "service token test started")
             scope.launch {
                 val outcome = withContext(Dispatchers.IO) {
                     ZeroTrustSignIn().testServiceToken(rawTeam, id, secret)
                 }
                 result = when (outcome) {
-                    is ZeroTrustSignIn.Result.Ok -> ServiceTest.Passed
-                    is ZeroTrustSignIn.Result.Failed -> ServiceTest.Failed(outcome.failure)
+                    is ZeroTrustSignIn.Result.Ok -> {
+                        AppLog.event(LOG_TAG, "service token test passed")
+                        ServiceTest.Passed
+                    }
+                    is ZeroTrustSignIn.Result.Failed -> {
+                        AppLog.event(LOG_TAG, "service token test failed: ${outcome.failure}")
+                        ServiceTest.Failed(outcome.failure)
+                    }
                 }
             }
         },
@@ -429,12 +443,20 @@ internal fun ZeroTrustSignInDialog(
     fun requestCode() {
         step = SignInStep.Sending
         code = ""
+        // Team/email are the organization's own identifiers, not logged here -
+        // only the outcome, same as the rest of this app-wide log.
+        AppLog.event(LOG_TAG, "sign-in code requested")
         scope.launch {
             val result = withContext(Dispatchers.IO) { client.requestCode(rawTeam, email) }
             step = when (result) {
-                is ZeroTrustSignIn.Result.Ok ->
+                is ZeroTrustSignIn.Result.Ok -> {
+                    AppLog.event(LOG_TAG, "sign-in code sent")
                     SignInStep.Code(result.value, rejected = 0, sentAtMs = System.currentTimeMillis())
-                is ZeroTrustSignIn.Result.Failed -> SignInStep.Failed(Problem.Remote(result.failure))
+                }
+                is ZeroTrustSignIn.Result.Failed -> {
+                    AppLog.event(LOG_TAG, "requesting sign-in code failed: ${result.failure}")
+                    SignInStep.Failed(Problem.Remote(result.failure))
+                }
             }
         }
     }
@@ -460,24 +482,32 @@ internal fun ZeroTrustSignInDialog(
         val typed = code.trim()
         if (typed.isEmpty() || current.rejected >= MAX_CODE_ATTEMPTS) return
         step = SignInStep.Busy(current, resending = false)
+        AppLog.event(LOG_TAG, "sign-in code submitted")
         scope.launch {
             val result = withContext(Dispatchers.IO) { client.submitCode(current.session, typed) }
             // null = signed in and stored.
             val next: SignInStep? = when (result) {
-                is ZeroTrustSignIn.Result.Failed ->
+                is ZeroTrustSignIn.Result.Failed -> {
+                    AppLog.event(LOG_TAG, "submitting code failed: ${result.failure}")
                     current.copy(problem = Problem.Remote(result.failure), resent = false)
+                }
                 is ZeroTrustSignIn.Result.Ok -> when (val outcome = result.value) {
                     is ZeroTrustSignIn.CodeOutcome.Rejected -> {
+                        AppLog.event(LOG_TAG, "code rejected (attempt ${current.rejected + 1})")
                         code = ""
                         current.copy(rejected = current.rejected + 1, problem = null, resent = false)
                     }
                     is ZeroTrustSignIn.CodeOutcome.Token ->
-                        store(outcome.token)?.let { SignInStep.Failed(it) }
+                        store(outcome.token)?.let {
+                            AppLog.event(LOG_TAG, "token received but storing it failed: $it")
+                            SignInStep.Failed(it)
+                        }
                 }
             }
             if (next != null) {
                 step = next
             } else {
+                AppLog.event(LOG_TAG, "signed in to team")
                 signedIn()
             }
         }
@@ -486,15 +516,19 @@ internal fun ZeroTrustSignInDialog(
     fun resend() {
         val current = step as? SignInStep.Code ?: return
         step = SignInStep.Busy(current, resending = true)
+        AppLog.event(LOG_TAG, "sign-in code resend requested")
         scope.launch {
             val result = withContext(Dispatchers.IO) { client.resendCode(current.session) }
             step = when (result) {
                 is ZeroTrustSignIn.Result.Ok -> {
+                    AppLog.event(LOG_TAG, "code resent")
                     code = ""
                     current.copy(rejected = 0, sentAtMs = System.currentTimeMillis(), problem = null, resent = true)
                 }
-                is ZeroTrustSignIn.Result.Failed ->
+                is ZeroTrustSignIn.Result.Failed -> {
+                    AppLog.event(LOG_TAG, "resend failed: ${result.failure}")
                     current.copy(problem = Problem.Remote(result.failure), resent = false)
+                }
             }
         }
     }

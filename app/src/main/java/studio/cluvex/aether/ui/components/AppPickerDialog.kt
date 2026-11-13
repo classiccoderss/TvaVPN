@@ -38,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.LaunchedEffect
 import studio.cluvex.aether.R
+import studio.cluvex.aether.core.AppLog
 
 /** One installed app the user can pick for split tunneling. */
 data class AppEntry(val packageName: String, val label: String)
@@ -59,7 +60,9 @@ fun AppPickerDialog(
     val chosen = remember { mutableStateListOf<String>().apply { addAll(selected) } }
 
     LaunchedEffect(Unit) {
-        apps = withContext(Dispatchers.IO) { loadLaunchableApps(context) }
+        val loaded = withContext(Dispatchers.IO) { loadLaunchableApps(context) }
+        apps = loaded
+        AppLog.event("app-picker", "loaded ${loaded.size} launchable apps, ${selected.size} pre-selected")
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -155,8 +158,14 @@ fun AppPickerDialog(
                         .padding(top = 8.dp),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
-                    TextButton(onClick = { onConfirm(chosen.toList()) }) {
+                    TextButton(onClick = {
+                        AppLog.event("app-picker", "cancelled")
+                        onDismiss()
+                    }) { Text(stringResource(android.R.string.cancel)) }
+                    TextButton(onClick = {
+                        AppLog.event("app-picker", "confirmed with ${chosen.size} app(s) selected")
+                        onConfirm(chosen.toList())
+                    }) {
                         Text(stringResource(R.string.apps_done))
                     }
                 }
@@ -178,5 +187,7 @@ private fun loadLaunchableApps(context: Context): List<AppEntry> {
             }
             .distinctBy { it.packageName }
             .sortedBy { it.label.lowercase() }
+    }.onFailure {
+        AppLog.event("app-picker", "loading launchable apps failed: ${it.javaClass.simpleName}")
     }.getOrDefault(emptyList())
 }

@@ -32,14 +32,21 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import studio.cluvex.aether.R
+import studio.cluvex.aether.core.AppLog
+import studio.cluvex.aether.custom.ImportIntentBus
 import studio.cluvex.aether.data.ProfileStore
 import studio.cluvex.aether.model.ConnectionProfile
+
+/** Tag this page's events are recorded under in [AppLog] - see [AppLogPage]. */
+private const val LOG_TAG = "backup-import"
 
 /**
  * Export and import of the tunnel settings as one small JSON file.
@@ -88,24 +95,33 @@ internal fun BackupPage(
     // A parsed file waiting for the user's confirmation.
     var pending by remember { mutableStateOf<ConnectionProfile?>(null) }
 
-    // The outcome of the last export / import. It is shown on the page and also
-    // spoken: a Toast is easy to miss for a screen-reader user, and most of all
-    // right after the system file picker closes, which is when these appear.
+    // The outcome of the last export / import. Shown on the page AS A BANNER
+    // (not a Toast - a Toast times out on its own and is too easy to miss,
+    // especially right after an external-import intent switches screens on
+    // its own) and spoken for a screen-reader user. It stays until the user
+    // dismisses it or a new outcome replaces it - it does NOT disappear by
+    // itself. Every outcome is also written to [AppLog] (separate from the
+    // tunnel/connection log), so it is still visible on the App logs page
+    // even if it was missed live.
     var status by remember { mutableStateOf<Int?>(null) }
     val view = LocalView.current
     fun report(@StringRes message: Int) {
         status = message
         view.announceForAccessibility(context.getString(message))
+        AppLog.event(LOG_TAG, context.getString(message))
     }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
     ) { uri ->
-        if (uri != null) {
+        if (uri == null) {
+            AppLog.event(LOG_TAG, "export: user cancelled the save dialog")
+        } else {
             scope.launch {
                 val saved = withContext(Dispatchers.IO) {
                     runCatching { writeExport(context, store, profile, uri) }
                 }
+                AppLog.event(LOG_TAG, "export result: ${if (saved.isSuccess) "ok" else saved.exceptionOrNull()?.javaClass?.simpleName}")
                 report(if (saved.isSuccess) R.string.backup_exported else R.string.backup_export_failed)
             }
         }
@@ -114,13 +130,73 @@ internal fun BackupPage(
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
-        if (uri != null) {
+        if (uri == null) {
+            AppLog.event(LOG_TAG, "manual import: user cancelled the file picker")
+        } else {
             scope.launch {
-                when (val result = withContext(Dispatchers.IO) { readImport(context, store, uri) }) {
+                val result = withContext(Dispatchers.IO) { readImport(context, store, uri) }
+                AppLog.event(LOG_TAG, "manual import result: ${result::class.simpleName}")
+                when (result) {
                     is ImportResult.Ok -> pending = keepPrivate(result.profile, profile)
                     ImportResult.Newer -> report(R.string.backup_err_newer)
                     ImportResult.Invalid -> report(R.string.backup_err_invalid)
                 }
+            }
+        }
+    }
+
+    // EXTERNAL IMPORT (tvaVPN): the user tapped or shared in their own exported
+    // settings file from outside the app. MainActivity already peeked it (see
+    // isSettingsBackupFile below) and routed it here instead of to
+    // CustomConfigsPage, so it is run through the exact same readImport() the
+    // in-app "Import" button above uses. Any other payload type (a config link
+    // or a custom-config file) is not this page's job and is left alone for
+    // CustomConfigsPage to pick up.
+    //
+    // BUG FIX (tvaVPN): this used to be `val pendingExternalImport by
+    // ImportIntentBus.pending.collectAsState()` followed by
+    // `LaunchedEffect(pendingExternalImport) { ... ImportIntentBus.consume() ... }`.
+    // That keyed the effect on the very StateFlow value the effect itself
+    // resets to null via consume(). The moment consume() ran, the collected
+    // state flipped to null, Compose saw the LaunchedEffect's key change, and
+    // CANCELLED the still-running coroutine before it reached readImport() -
+    // every single time, for every external-intent import, with the log
+    // always stopping right after "handling settings file, editable=...".
+    // Importing from the in-app "Import" button (importLauncher above) never
+    // goes through ImportIntentBus, so it was never affected.
+    //
+    // Fix: collect the flow inside a LaunchedEffect keyed on Unit (so the
+    // effect itself is never restarted) and consume one emission at a time.
+    // consume()'s null value then just arrives as the next element of the
+    // same collect, instead of cancelling the coroutine that is mid-import.
+    val currentEditable by rememberUpdatedState(editable)
+    LaunchedEffect(Unit) {
+        ImportIntentBus.pending.collect { raw ->
+            // Logged unconditionally (not just when a SettingsFileUri shows up) so
+            // the app log proves whether BackupPage ever saw the flow emit at all -
+            // a FileUri/Text payload here means MainActivity classified the file as
+            // a custom config, not a settings backup, and this page was never going
+            // to handle it.
+            if (raw != null) {
+                AppLog.event(LOG_TAG, "ImportIntentBus emitted: ${raw::class.simpleName}")
+            }
+            val payload = raw as? ImportIntentBus.Payload.SettingsFileUri ?: return@collect
+            ImportIntentBus.consume()
+            AppLog.event(LOG_TAG, "handling settings file, editable=$currentEditable")
+            if (!currentEditable) {
+                AppLog.event(LOG_TAG, "blocked: page is locked (tunnel is connected) - import not attempted")
+                report(R.string.backup_locked)
+                return@collect
+            }
+            val result = withContext(Dispatchers.IO) { readImport(context, store, payload.uri) }
+            AppLog.event(LOG_TAG, "file read result: ${result::class.simpleName}")
+            when (result) {
+                is ImportResult.Ok -> {
+                    pending = keepPrivate(result.profile, profile)
+                    AppLog.event(LOG_TAG, "parsed OK, confirm dialog is now showing")
+                }
+                ImportResult.Newer -> report(R.string.backup_err_newer)
+                ImportResult.Invalid -> report(R.string.backup_err_invalid)
             }
         }
     }
@@ -172,22 +248,38 @@ internal fun BackupPage(
             }
             GroupFooter(stringResource(R.string.backup_footer))
         }
+        // The event log used to have its own row here ("App log"), reachable
+        // only from this page - but it records every UI flow in the app, not
+        // just import/export (see AppLog's header comment), so burying its
+        // only entry point inside Backup made it look like an import/export
+        // debugging tool instead of what it actually is. It is now a
+        // top-level row on the Settings home page (SettingsHomePage, "App
+        // activity log" / R.string.applog_nav_title) next to Diagnostics,
+        // reached the same way for every flow that logs to it, backup
+        // included.
     }
 
     pending?.let { incoming ->
         AlertDialog(
-            onDismissRequest = { pending = null },
+            onDismissRequest = {
+                pending = null
+                AppLog.event(LOG_TAG, "confirm dialog dismissed (outside tap / back)")
+            },
             title = { Text(stringResource(R.string.backup_confirm_title)) },
             text = { Text(stringResource(R.string.backup_confirm_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     pending = null
                     onProfileChange(incoming)
+                    AppLog.event(LOG_TAG, "confirm dialog: user accepted - settings applied")
                     report(R.string.backup_imported)
                 }) { Text(stringResource(R.string.backup_confirm_ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { pending = null }) {
+                TextButton(onClick = {
+                    pending = null
+                    AppLog.event(LOG_TAG, "confirm dialog: user cancelled")
+                }) {
                     Text(stringResource(R.string.action_cancel))
                 }
             },
@@ -275,6 +367,37 @@ private suspend fun writeExport(
     val stream = context.contentResolver.openOutputStream(uri, "wt")
         ?: throw java.io.IOException("no output stream")
     stream.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+}
+
+/**
+ * Peeks at [uri] to tell a settings backup file (written by [writeExport]) apart
+ * from a custom proxy-config JSON file, without importing either one. Used by
+ * MainActivity before it decides whether an externally opened/shared `.json`
+ * file should be routed to this page or to Custom configs - both are plain
+ * JSON, so without this check a settings file opened from outside the app
+ * (tapped in a file manager, shared in) would reach [studio.cluvex.aether.custom.ConfigImporter]
+ * instead, which rejects it as "the JSON has no proxy outbound" even though it
+ * is a perfectly valid file, just the other app's JSON format.
+ *
+ * Reads the same [MAX_BYTES] ceiling as a real import and never throws; any
+ * read or parse failure just means "not a settings file", and the file falls
+ * back to the normal custom-config import path, same as before this existed.
+ */
+internal fun isSettingsBackupFile(context: Context, uri: Uri): Boolean = try {
+    val bytes = context.contentResolver.openInputStream(uri)?.use { stream ->
+        val out = ByteArrayOutputStream()
+        val buffer = ByteArray(8 * 1024)
+        while (true) {
+            val n = stream.read(buffer)
+            if (n < 0) break
+            if (out.size() + n > MAX_BYTES) return false
+            out.write(buffer, 0, n)
+        }
+        out.toByteArray()
+    }
+    bytes != null && JSONObject(String(bytes, Charsets.UTF_8)).optString("format") == FORMAT
+} catch (_: Exception) {
+    false
 }
 
 /** Reads at most [MAX_BYTES] from [uri] and turns it into a profile. Never throws. */
