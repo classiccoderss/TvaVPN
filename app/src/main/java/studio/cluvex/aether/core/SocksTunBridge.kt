@@ -549,6 +549,13 @@ class SocksTunBridge(
         private val createdAt = SystemClock.elapsedRealtime()
         private val lastActivity = AtomicLong(SystemClock.elapsedRealtime())
 
+        // Handshake Sentinel bookkeeping for this flow's UPSTREAM dial (1.8.3).
+        // Only a dial that goes through the tunnel counts: a DIRECT flow is the
+        // user's own bypass rule and says nothing about the path's health.
+        private var dialStartedAt = 0L
+        private var dialGoesThroughTunnel = false
+        private var dialRecorded = false
+
         fun isConnected(): Boolean = connected.get()
 
         fun isStaleUnconnected(): Boolean = !connected.get() && (SystemClock.elapsedRealtime() - createdAt > 1000)
@@ -695,14 +702,23 @@ class SocksTunBridge(
                     val directNetworkType = networkLabel(network)
                     LogRepository.i("[Routing] DIRECT_CONNECTED domain=${decision.resolvedDomain ?: "unknown"} ip=$targetIpStr via=$directNetworkType local=${s.localAddress.hostAddress}")
                 } else {
+                    dialGoesThroughTunnel = true
+                    dialStartedAt = SystemClock.elapsedRealtime()
                     runCatching { vpnService.protect(s) }
                     s.connect(InetSocketAddress(socksHost, socksPort), 5000)
                     ins = s.getInputStream()
                     out = BufferedOutputStream(s.getOutputStream(), 131072)
-                    if (!socksHandshake(ins, out)) return
+                    if (!socksHandshake(ins, out)) {
+                        noteDial(false, "SOCKS5 greeting rejected")
+                        return
+                    }
                     out.write(socksRequest(1, sniffedDomain ?: cachedDomain, serverIp, serverPort))
                     out.flush()
-                    if (readSocksReply(ins) == null) return
+                    if (readSocksReply(ins) == null) {
+                        noteDial(false, "upstream CONNECT refused or unanswered")
+                        return
+                    }
+                    noteDial(true, "connected")
                 }
 
                 connected.set(true)
@@ -755,12 +771,42 @@ class SocksTunBridge(
                     }
                 }
             } catch (exception: Exception) {
+                // A dial that throws (the local listener refused, the exit never
+                // answered, the network went away) is exactly a failed new
+                // connection. Anything thrown AFTER the dial completed is
+                // ignored by noteDial, so a flow dying mid-transfer is never
+                // counted as a handshake failure.
+                noteDial(false, exception.javaClass.simpleName)
                 if (isRunning.get() && !isClosed.get()) {
                     LogRepository.w("[Routing] TCP session failed: ${exception.localizedMessage}")
                 }
             } finally {
                 close()
             }
+        }
+
+        /**
+         * Feeds this flow's upstream dial outcome to [HandshakeSentinel] (1.8.3).
+         *
+         * One record per flow, written once: whichever of connect / greeting /
+         * CONNECT-reply / exception happens first decides the outcome. The
+         * destination is named the same way the routing log names it (the
+         * sniffed or cached domain when there is one, otherwise the IP), so the
+         * "N destinations failed" count in the verdict is about genuinely
+         * different servers and not about one app retrying one host.
+         */
+        private fun noteDial(ok: Boolean, kind: String) {
+            if (!dialGoesThroughTunnel || dialRecorded) return
+            dialRecorded = true
+            val host = runCatching { InetAddress.getByAddress(serverIp).hostAddress ?: "" }
+                .getOrDefault("")
+            val dest = (DnsMap.get(host) ?: host) + ":" + serverPort
+            HandshakeSentinel.record(
+                ok = ok,
+                dest = dest,
+                tookMs = SystemClock.elapsedRealtime() - dialStartedAt,
+                kind = kind,
+            )
         }
 
         private fun readFromSocks(ins: InputStream) {

@@ -1,0 +1,28 @@
+{
+    "logs": [
+        {
+            "outputFile": "studio.cluvex.aether.app-mergeDebugResources-50:/values-v27/values-v27.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\tohid\\Documents\\tvaVPN\\app\\src\\main\\res\\values-v27\\themes.xml",
+                    "from": {
+                        "startLines": "14",
+                        "startColumns": "4",
+                        "startOffsets": "605",
+                        "endLines": "19",
+                        "endColumns": "12",
+                        "endOffsets": "1019"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "7",
+                        "endColumns": "12",
+                        "endOffsets": "469"
+                    }
+                }
+            ]
+        }
+    ]
+}

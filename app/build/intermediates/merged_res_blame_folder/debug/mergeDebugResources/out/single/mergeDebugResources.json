@@ -1,0 +1,74 @@
+[
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/xml_backup_rules.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/xml_network_security_config.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/xml/network_security_config.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/drawable_ic_telegram.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/drawable/ic_telegram.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/xml_aether_widget_info.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/xml/aether_widget_info.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/xml_file_paths.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/xml/file_paths.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/layout_aether_widget.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/layout/aether_widget.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/xml_data_extraction_rules.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/drawable_ic_notification.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/drawable/ic_notification.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/drawable_ic_launcher_background.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/drawable_widget_bg.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/drawable/widget_bg.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/drawable_ic_launcher_monochrome.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/drawable/ic_launcher_monochrome.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/drawable_widget_button_bg.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/drawable/widget_button_bg.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/drawable-xhdpi_tv_banner.png.flat",
+        "source": "studio.cluvex.aether.app-main-54:/drawable-xhdpi/tv_banner.png"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/drawable_ic_github.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/drawable/ic_github.xml"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/font_vazirmatn_bold.ttf.flat",
+        "source": "studio.cluvex.aether.app-main-54:/font/vazirmatn_bold.ttf"
+    },
+    {
+        "merged": "studio.cluvex.aether.app-debug-52:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "studio.cluvex.aether.app-main-54:/mipmap-anydpi-v26/ic_launcher.xml"
+    }
+]

@@ -29,8 +29,9 @@ import studio.cluvex.aether.core.AetherController
 import studio.cluvex.aether.core.AetherProcess
 import studio.cluvex.aether.core.Diagnostics
 import studio.cluvex.aether.core.DiagnosticsLog
-import studio.cluvex.aether.core.GuardianPrefs
 import studio.cluvex.aether.core.EngineMeta
+import studio.cluvex.aether.core.GuardianPrefs
+import studio.cluvex.aether.core.HandshakeSentinel
 import studio.cluvex.aether.core.AutoCandidate
 import studio.cluvex.aether.core.NetworkIdentity
 import studio.cluvex.aether.core.ConnectionQuality
@@ -861,6 +862,7 @@ class AetherVpnService : VpnService() {
         // stops the badge reporting a dead connection's timeout as latency.
         PingMonitor.reset()
         ConnectionQuality.reset()
+        HandshakeSentinel.reset()
         AetherController.setState(ConnectionState.Connected("$SOCKS_HOST:$port"))
         updateNotification(getString(R.string.state_connected))
         DiagnosticsLog.i(
@@ -911,6 +913,18 @@ class AetherVpnService : VpnService() {
                 // Sampled on EVERY probe decision so the delta always covers the
                 // interval since the last one, success or failure.
                 val dataPathMoving = dataPathIsMoving()
+                if (newConnectionsStarved()) {
+                    // 1.8.3: see [newConnectionsStarved]. The chained path is
+                    // rebuilt by leaving this loop; its caller already redials
+                    // the whole chain with the existing retry/backoff rules.
+                    DiagnosticsLog.w(
+                        TAG,
+                        "Handshake Sentinel: established " + profile.backend.pipelineLabel +
+                            " flows are still moving but every NEW connection is failing - " +
+                            "rebuilding the session.",
+                    )
+                    break
+                }
                 // QUALITY SUPERVISION (1.5.11), carried over from the solo WARP
                 // watchdog's own copy of this exact check below: this chained
                 // session's ConnectionQuality badge was only ever reset at
@@ -1106,6 +1120,7 @@ class AetherVpnService : VpnService() {
         PingMonitor.setTunnelPort(frontPort)
         PingMonitor.reset()
         ConnectionQuality.reset()
+        HandshakeSentinel.reset()
         AetherController.setState(ConnectionState.Connected("$SOCKS_HOST:$frontPort"))
         updateNotification(getString(R.string.state_connected))
         DiagnosticsLog.i(TAG, "${profile.backend.pipelineLabel} tunnel ready (exit = a Tor exit node).")
@@ -1905,6 +1920,22 @@ class AetherVpnService : VpnService() {
                     val freshPing = PingMonitor.pingOnce(viaTunnel = true)
                     if (freshPing) ConnectionQuality.record(PingMonitor.state.value)
                     val dataPathMoving = dataPathIsMoving()
+                    if (newConnectionsStarved()) {
+                        // 1.8.3: the one case the idle-only quality rule above
+                        // cannot see - see [newConnectionsStarved]. Nothing is
+                        // reset here: stop() takes the engine down and the loop
+                        // below redials with the usual backoff.
+                        probeFailures = 0
+                        poorQualityCycles = 0
+                        DiagnosticsLog.w(
+                            TAG,
+                            "Handshake Sentinel: existing flows are still moving but every " +
+                                "NEW connection is failing - restarting the engine to get a " +
+                                "working path back.",
+                        )
+                        engine?.stop()
+                        continue
+                    }
                     if (probeTunnelCycle()) {
                         probeFailures = 0
                         // Continuous quality supervision: sample the real tunnel
@@ -2423,6 +2454,7 @@ class AetherVpnService : VpnService() {
         PingMonitor.setTunnelPort(port)
         PingMonitor.reset()
         ConnectionQuality.reset()
+        HandshakeSentinel.reset()
         AetherController.setState(ConnectionState.Connected("$SOCKS_HOST:$port"))
         updateNotification(getString(R.string.state_connected))
         DiagnosticsLog.i(TAG, "Custom-config tunnel ready on $SOCKS_HOST:$port.")
@@ -2454,6 +2486,14 @@ class AetherVpnService : VpnService() {
                     throw IllegalStateException(getString(R.string.cc_err_core_failed))
                 }
                 val moving = dataPathIsMoving()
+                if (newConnectionsStarved()) {
+                    DiagnosticsLog.w(
+                        TAG,
+                        "Handshake Sentinel: the custom-config path still carries its existing " +
+                            "flows but every NEW connection is failing - rebuilding the session.",
+                    )
+                    break
+                }
                 if (probeTunnelCycle(port) || moving) {
                     pipelineDead = 0
                     nextProbe = SystemClock.elapsedRealtime() + PIPELINE_PROBE_INTERVAL_MS
@@ -2895,7 +2935,8 @@ class AetherVpnService : VpnService() {
             EngineMeta.reset()
             PingMonitor.resetTunnelPort()
             PingMonitor.reset()
-        ConnectionQuality.reset()
+            ConnectionQuality.reset()
+            HandshakeSentinel.reset()
             // Back to the documented ports for the next session: a relocation is a
             // fact about one session's environment, not a setting.
             PortLease.reset()
@@ -3079,6 +3120,45 @@ class AetherVpnService : VpnService() {
         lastDataPathBytes = now
         if (now < 0 || previous < 0) return false
         return now - previous >= DATA_PATH_ALIVE_BYTES
+    }
+
+    /**
+     * True when the path can still carry what it already has, but can no longer
+     * open anything new (1.8.3, "Handshake Sentinel").
+     *
+     * Both watchdogs deliberately refuse to act while the data path is moving -
+     * correctly, because rebuilding under a live stream is how a healthy session
+     * gets killed. But "moving" is measured on the tunnel core's TOTAL byte
+     * counters, which only prove that the flows that already exist are still
+     * being carried, and the latency probe cannot add a second opinion because
+     * [PingMonitor] deliberately reuses one warm connection. So the very common
+     * filtered-path failure - the exit has stopped accepting NEW flows while the
+     * old ones keep streaming - reads as perfectly healthy and never recovers on
+     * its own.
+     *
+     * [HandshakeSentinel] answers that from the dials the user's own apps make:
+     * it is only consulted here (never as an extra probe), and only when the
+     * window supports a verdict at all. Both existing Guardian switches keep
+     * their meaning: `monitor_enabled` gates detection, `quality_recovery_enabled`
+     * gates the rebuild itself, exactly as they already do for severe latency.
+     *
+     * The verdict is consumed either way, so one outage produces one decision
+     * and one log line, not a message every watchdog wake-up.
+     */
+    private fun newConnectionsStarved(): Boolean {
+        if (!GuardianPrefs.isMonitoringEnabled(applicationContext)) return false
+        val verdict = HandshakeSentinel.verdict() ?: return false
+        HandshakeSentinel.consume()
+        DiagnosticsLog.w(TAG, "Handshake Sentinel: ${verdict.summary()}")
+        if (!GuardianPrefs.isQualityRecoveryEnabled(applicationContext)) {
+            DiagnosticsLog.w(
+                TAG,
+                "Handshake Sentinel: automatic quality recovery is disabled - leaving the " +
+                    "session alone.",
+            )
+            return false
+        }
+        return true
     }
 
     /**

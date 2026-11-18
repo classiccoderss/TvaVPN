@@ -1,0 +1,1168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools" xmlns:ns2="urn:oasis:names:tc:xliff:document:1.2">
+    <attr format="reference" name="nestedScrollViewStyle"/>
+    <color name="aether_background">#070B14</color>
+    <color name="aether_primary">#5B93FF</color>
+    <color name="aether_surface">#0B111D</color>
+    <color name="androidx_core_ripple_material_light">#1f000000</color>
+    <color name="androidx_core_secondary_text_default_material_light">#8a000000</color>
+    <color name="black">#000000</color>
+    <color name="call_notification_answer_color">#1d873b</color>
+    <color name="call_notification_decline_color">#d93025</color>
+    <color name="notification_action_color_filter">#ffffffff</color>
+    <color name="notification_icon_bg_color">#ff9e9e9e</color>
+    <color name="white">#FFFFFF</color>
+    <color name="zxing_custom_possible_result_points">#903A89CF</color>
+    <color name="zxing_custom_result_view">#b0000000</color>
+    <color name="zxing_custom_viewfinder_laser">#1976D2</color>
+    <color name="zxing_custom_viewfinder_mask">#60000000</color>
+    <color name="zxing_possible_result_points">#c0ffbd21</color>
+    <color name="zxing_result_view">#b0000000</color>
+    <color name="zxing_status_text">#ffffffff</color>
+    <color name="zxing_transparent">#00000000</color>
+    <color name="zxing_viewfinder_laser">#ffcc0000</color>
+    <color name="zxing_viewfinder_mask">#60000000</color>
+    <dimen name="compat_button_inset_horizontal_material">4dp</dimen>
+    <dimen name="compat_button_inset_vertical_material">6dp</dimen>
+    <dimen name="compat_button_padding_horizontal_material">8dp</dimen>
+    <dimen name="compat_button_padding_vertical_material">4dp</dimen>
+    <dimen name="compat_control_corner_material">2dp</dimen>
+    <dimen name="compat_notification_large_icon_max_height">320dp</dimen>
+    <dimen name="compat_notification_large_icon_max_width">320dp</dimen>
+    <dimen name="notification_action_icon_size">32dp</dimen>
+    <dimen name="notification_action_text_size">13sp</dimen>
+    <dimen name="notification_big_circle_margin">12dp</dimen>
+    <dimen name="notification_content_margin_start">8dp</dimen>
+    <dimen name="notification_large_icon_height">64dp</dimen>
+    <dimen name="notification_large_icon_width">64dp</dimen>
+    <dimen name="notification_main_column_padding_top">10dp</dimen>
+    <dimen name="notification_media_narrow_margin">@dimen/notification_content_margin_start</dimen>
+    <dimen name="notification_right_icon_size">16dp</dimen>
+    <dimen name="notification_right_side_padding_top">4dp</dimen>
+    <dimen name="notification_small_icon_background_padding">3dp</dimen>
+    <dimen name="notification_small_icon_size_as_large">24dp</dimen>
+    <dimen name="notification_subtext_size">13sp</dimen>
+    <dimen name="notification_top_pad">10dp</dimen>
+    <dimen name="notification_top_pad_large_text">5dp</dimen>
+    <drawable name="notification_template_icon_bg">#3333B5E5</drawable>
+    <drawable name="notification_template_icon_low_bg">#0cffffff</drawable>
+    <item name="accessibility_action_clickable_span" type="id"/>
+    <item name="accessibility_custom_action_0" type="id"/>
+    <item name="accessibility_custom_action_1" type="id"/>
+    <item name="accessibility_custom_action_10" type="id"/>
+    <item name="accessibility_custom_action_11" type="id"/>
+    <item name="accessibility_custom_action_12" type="id"/>
+    <item name="accessibility_custom_action_13" type="id"/>
+    <item name="accessibility_custom_action_14" type="id"/>
+    <item name="accessibility_custom_action_15" type="id"/>
+    <item name="accessibility_custom_action_16" type="id"/>
+    <item name="accessibility_custom_action_17" type="id"/>
+    <item name="accessibility_custom_action_18" type="id"/>
+    <item name="accessibility_custom_action_19" type="id"/>
+    <item name="accessibility_custom_action_2" type="id"/>
+    <item name="accessibility_custom_action_20" type="id"/>
+    <item name="accessibility_custom_action_21" type="id"/>
+    <item name="accessibility_custom_action_22" type="id"/>
+    <item name="accessibility_custom_action_23" type="id"/>
+    <item name="accessibility_custom_action_24" type="id"/>
+    <item name="accessibility_custom_action_25" type="id"/>
+    <item name="accessibility_custom_action_26" type="id"/>
+    <item name="accessibility_custom_action_27" type="id"/>
+    <item name="accessibility_custom_action_28" type="id"/>
+    <item name="accessibility_custom_action_29" type="id"/>
+    <item name="accessibility_custom_action_3" type="id"/>
+    <item name="accessibility_custom_action_30" type="id"/>
+    <item name="accessibility_custom_action_31" type="id"/>
+    <item name="accessibility_custom_action_4" type="id"/>
+    <item name="accessibility_custom_action_5" type="id"/>
+    <item name="accessibility_custom_action_6" type="id"/>
+    <item name="accessibility_custom_action_7" type="id"/>
+    <item name="accessibility_custom_action_8" type="id"/>
+    <item name="accessibility_custom_action_9" type="id"/>
+    <item name="androidx_compose_ui_view_composition_context" type="id"/>
+    <item name="compose_view_saveable_id_tag" type="id"/>
+    <item name="consume_window_insets_tag" type="id"/>
+    <item name="hide_graphics_layer_in_inspector_tag" type="id"/>
+    <item name="hide_in_inspector_tag" type="id"/>
+    <item name="inspection_slot_table_set" type="id"/>
+    <item name="is_pooling_container_tag" type="id"/>
+    <item name="line1" type="id"/>
+    <item name="line3" type="id"/>
+    <item name="pooling_container_listener_holder_tag" type="id"/>
+    <item name="report_drawn" type="id"/>
+    <item name="tag_accessibility_actions" type="id"/>
+    <item name="tag_accessibility_clickable_spans" type="id"/>
+    <item name="tag_accessibility_heading" type="id"/>
+    <item name="tag_accessibility_pane_title" type="id"/>
+    <item name="tag_on_apply_window_listener" type="id"/>
+    <item name="tag_on_receive_content_listener" type="id"/>
+    <item name="tag_on_receive_content_mime_types" type="id"/>
+    <item name="tag_screen_reader_focusable" type="id"/>
+    <item name="tag_state_description" type="id"/>
+    <item name="tag_transition_group" type="id"/>
+    <item name="tag_unhandled_key_event_manager" type="id"/>
+    <item name="tag_unhandled_key_listeners" type="id"/>
+    <item name="tag_window_insets_animation_callback" type="id"/>
+    <item name="text" type="id"/>
+    <item name="text2" type="id"/>
+    <item name="title" type="id"/>
+    <id name="view_tree_lifecycle_owner"/>
+    <id name="view_tree_on_back_pressed_dispatcher_owner"/>
+    <id name="view_tree_saved_state_registry_owner"/>
+    <id name="view_tree_view_model_store_owner"/>
+    <item name="wrapped_composition_tag" type="id"/>
+    <item name="zxing_back_button" type="id"/>
+    <item name="zxing_camera_closed" type="id"/>
+    <item name="zxing_camera_error" type="id"/>
+    <item name="zxing_decode" type="id"/>
+    <item name="zxing_decode_failed" type="id"/>
+    <item name="zxing_decode_succeeded" type="id"/>
+    <item name="zxing_possible_result_points" type="id"/>
+    <item name="zxing_preview_failed" type="id"/>
+    <item name="zxing_prewiew_size_ready" type="id"/>
+    <integer name="m3c_window_layout_in_display_cutout_mode">1</integer>
+    <integer name="status_bar_notification_info_maxnum">999</integer>
+    <plurals name="access_token_ok">
+        <item quantity="one">Token looks valid, expires in %1$d day.</item>
+        <item quantity="other">Token looks valid, expires in %1$d days.</item>
+    </plurals>
+    <plurals name="diag_log_lines_count">
+        <item quantity="one">%1$d log line</item>
+        <item quantity="other">%1$d log lines</item>
+    </plurals>
+    <plurals name="zt_code_wait">
+        <item quantity="one">The connection is waiting for this. It gives up after %1$d second.</item>
+        <item quantity="other">The connection is waiting for this. It gives up after %1$d seconds.</item>
+    </plurals>
+    <plurals name="zt_dlg_resend_wait">
+        <item quantity="one">New code possible in %1$d second</item>
+        <item quantity="other">New code possible in %1$d seconds</item>
+    </plurals>
+    <plurals name="zt_signin_left_days">
+        <item quantity="one">The sign-in is valid for %1$d more day.</item>
+        <item quantity="other">The sign-in is valid for %1$d more days.</item>
+    </plurals>
+    <plurals name="zt_signin_left_hours">
+        <item quantity="one">The sign-in is valid for %1$d more hour.</item>
+        <item quantity="other">The sign-in is valid for %1$d more hours.</item>
+    </plurals>
+    <plurals name="zt_signin_left_minutes">
+        <item quantity="one">The sign-in is valid for %1$d more minute: connect before then.</item>
+        <item quantity="other">The sign-in is valid for %1$d more minutes: connect before then.</item>
+    </plurals>
+    <string name="a11y_back">Back</string>
+    <string name="a11y_cancel_connecting">Cancel connecting</string>
+    <string name="a11y_connect">Connect</string>
+    <string name="a11y_copy_value">Copy %1$s</string>
+    <string name="a11y_disconnect">Disconnect</string>
+    <string name="a11y_hide_password">Hide password</string>
+    <string name="a11y_hide_value">Hide value</string>
+    <string name="a11y_select_message">Select message</string>
+    <string name="a11y_show_password">Show password</string>
+    <string name="a11y_show_value">Show value</string>
+    <string name="about_core_version">Engine (core) version %1$s</string>
+    <string name="about_own_note">This edition of the app</string>
+    <string name="about_own_title">tvaVPN — classic coders</string>
+    <string name="about_patch_level">Build: %1$s</string>
+    <string name="about_subtitle">Version, links &amp; build info</string>
+    <string name="about_telegram_button">Open Telegram channel @ClassicDevs</string>
+    <string name="about_title">About</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="access_email_label">Work e-mail</string>
+    <string name="access_id_label">Client ID</string>
+    <string name="access_secret_help">Stored encrypted with a hardware-backed key and passed to the engine out of band, never on the command line.</string>
+    <string name="access_secret_label">Client secret</string>
+    <string name="access_token_bad">This does not look like a token. Copy the whole value that follows token= on the enrolment page.</string>
+    <string name="access_token_expired">This token has expired. Sign in again and paste a fresh one.</string>
+    <string name="access_token_how">Sign in at https://&lt;team>.cloudflareaccess.com/warp in a browser, then copy the value that follows token= and paste it here. Or pick E-mail code above to sign in inside the app instead.</string>
+    <string name="access_token_label">Enrolment token</string>
+    <string name="access_token_nodate">Token looks valid. It carries no expiry date.</string>
+    <string name="access_token_ok_soon">Token looks valid but expires in under a day.</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="advanced">Advanced settings</string>
+    <string name="androidx_startup" translatable="false">androidx.startup</string>
+    <string name="app_name">tvaVPN</string>
+    <string name="app_version" translatable="false">null</string>
+    <string name="applog_copied">Log copied to clipboard</string>
+    <string name="applog_copy">Copy log</string>
+    <string name="applog_empty">Nothing logged yet</string>
+    <string name="applog_nav_desc">What happened across the app - launches, config imports, updates, team sign-in, sharing and more (separate from the connection log)</string>
+    <string name="applog_nav_title">App logs</string>
+    <string name="applog_show_more">Show %1$d older lines</string>
+    <string name="applog_title">App logs</string>
+    <string name="apps_dialog_title">Select apps</string>
+    <string name="apps_done">Done</string>
+    <string name="apps_loading">Loading apps\u2026</string>
+    <string name="apps_search_hint">Search apps</string>
+    <string name="back">Back</string>
+    <string name="backend_help_aether">One hop through the bundled tvaVPN/WARP engine. Fastest.</string>
+    <string name="backend_help_aether_tor">Two hops: tvaVPN connects first, then Tor is built INSIDE that tunnel. The network you are on sees only tvaVPN’s obfuscated transport, never Tor — so this is the mode to use where Tor is blocked. Your exit is a Tor exit node.</string>
+    <string name="backend_help_chained">Two hops: tvaVPN connects first, then Psiphon tunnels through it. Your exit IP becomes Psiphon\'s, so sites that block tvaVPN/WARP addresses open again.</string>
+    <string name="backend_help_tor">Tor alone, without the tvaVPN tunnel. Your exit is a Tor exit node and your traffic passes three relays, which is the slowest and the most private of the modes. Tor has to reach the Tor network by itself here, so it uses bridges when it is blocked.</string>
+    <string name="backend_help_tor_aether">The reverse chain: Tor first, then the tvaVPN tunnel built INSIDE it. Your exit is a WARP address — the same as plain tvaVPN — but the network you are on sees only Tor, and cannot tell that a VPN tunnel exists at all. Use it where Cloudflare/WARP itself is blocked or throttled but Tor still gets through. Carries normal UDP, unlike the Tor-exit modes.</string>
+    <string name="backend_help_tor_psiphon">Three hops: Tor first, then Psiphon dialled through it. Your exit IP is Psiphon’s, reached from a Tor address, so sites that block Tor exit nodes open again while your own address stays behind Tor. The slowest mode.</string>
+    <string name="backend_label">Network backend</string>
+    <string name="backup_confirm_body">Your current settings will be replaced. The Zero Trust sign-in and the upstream proxy on this phone are kept. Only import files from people you trust: a settings file can change DNS servers, endpoints and routes.</string>
+    <string name="backup_confirm_ok">Import</string>
+    <string name="backup_confirm_title">Import these settings?</string>
+    <string name="backup_err_invalid">This is not a valid tvaVPN settings file</string>
+    <string name="backup_err_newer">This file was made by a newer version of tvaVPN</string>
+    <string name="backup_export">Export settings to a file</string>
+    <string name="backup_export_desc">Choose where to save a small JSON file</string>
+    <string name="backup_export_failed">Could not save the file</string>
+    <string name="backup_exported">Settings saved</string>
+    <string name="backup_footer">The file holds your tunnel settings only. It never contains passwords, tokens, the Zero Trust sign-in, your upstream proxy, custom configs or the AI key.</string>
+    <string name="backup_import">Import settings from a file</string>
+    <string name="backup_import_desc">Replaces the current settings with the ones in a file</string>
+    <string name="backup_imported">Settings imported</string>
+    <string name="backup_locked">Disconnect first to import settings.</string>
+    <string name="backup_nav_desc">Save your settings to a file, or restore them</string>
+    <string name="backup_title">Export &amp; import settings</string>
+    <string name="battery_desc">Android is still allowed to suspend tvaVPN. That is what drops the tunnel when the screen goes off — it still says connected but nothing loads. Tap to exempt it.</string>
+    <string name="battery_title">Allow background running</string>
+    <string name="block_ads_desc">Blocks ad and tracker domains (HaGeZi Light list, refreshed weekly through the tunnel).</string>
+    <string name="block_ads_title">Block ads and trackers</string>
+    <string name="blocked_apps_desc">Blocked apps get no internet at all while the VPN is on. Activates the built-in filter bridge.</string>
+    <string name="blocked_select_apps">Blocked apps (%1$d)</string>
+    <string name="bypass_iran_desc">Iranian sites (.ir and Iranian IP ranges) open directly, outside the tunnel. Paused while sharing.</string>
+    <string name="bypass_iran_title">Bypass Iranian sites</string>
+    <string name="call_notification_answer_action">Answer</string>
+    <string name="call_notification_answer_video_action">Video</string>
+    <string name="call_notification_decline_action">Decline</string>
+    <string name="call_notification_hang_up_action">Hang Up</string>
+    <string name="call_notification_incoming_text">Incoming call</string>
+    <string name="call_notification_ongoing_text">Ongoing call</string>
+    <string name="call_notification_screening_text">Screening an incoming call</string>
+    <string name="cancel">Cancel</string>
+    <string name="cat_appearance_desc">Choose English or Persian, or follow the phone</string>
+    <string name="cat_apps">Apps &amp; proxy</string>
+    <string name="cat_apps_desc">Proxy mode, split tunneling and blocked apps</string>
+    <string name="cat_connection">Connection</string>
+    <string name="cat_connection_desc">Network backend, exit country, protocol and scanning</string>
+    <string name="cat_dns_routing">DNS &amp; routing rules</string>
+    <string name="cat_dns_routing_desc">Resolvers inside the tunnel, block and bypass lists</string>
+    <string name="cat_engine_desc">Fragmentation, TLS groups and core log level</string>
+    <string name="cat_group_antidpi">Anti-DPI</string>
+    <string name="cat_group_app">App</string>
+    <string name="cat_group_device">This device</string>
+    <string name="cat_group_recovery">Recovery</string>
+    <string name="cat_group_tls">TLS fingerprint</string>
+    <string name="cat_group_tuning">Tuning</string>
+    <string name="cat_group_tunnel">Tunnel</string>
+    <string name="cat_security_desc">Kill switch, IPv6 leak protection and reconnects</string>
+    <string name="cat_transport_desc">Obfuscation, endpoint, MTU and anti-DPI</string>
+    <string name="cat_upstream_desc">Dial out through a proxy already running on this phone</string>
+    <string name="cat_zerotrust_desc">Join a Cloudflare Zero Trust organization</string>
+    <string name="cc_action_copy">Copy link</string>
+    <string name="cc_action_delete">Delete</string>
+    <string name="cc_action_edit">Edit</string>
+    <string name="cc_action_rename">Rename</string>
+    <string name="cc_action_use">Use this config</string>
+    <string name="cc_auto_select">Auto-select fastest</string>
+    <string name="cc_auto_select_desc">After a speed test, switch to the fastest config that answered. If the active one fails to connect, try the next-fastest instead of just showing an error.</string>
+    <string name="cc_badge_expired">Expired</string>
+    <string name="cc_badge_mobile">Mobile data only</string>
+    <string name="cc_chain_desc">Where the config sits in the path, in the order traffic leaves the phone</string>
+    <string name="cc_chain_footer">Single: the config alone. Double and triple: the config in front of the built-in engine (the engine dials through it) or behind its exit (the config is dialled through the engine). Engine settings such as protocol, exit country and Tor bridges still apply to the engine hops.</string>
+    <string name="cc_chain_title">Chain</string>
+    <string name="cc_config_word">Config</string>
+    <string name="cc_delete_all">Delete all configs</string>
+    <string name="cc_delete_all_body">Every saved custom config will be removed from this device.</string>
+    <string name="cc_delete_body">“%1$s” will be removed from this device.</string>
+    <string name="cc_delete_title">Delete config?</string>
+    <string name="cc_edit_title">Edit config</string>
+    <string name="cc_empty">No configs yet. Add one above.</string>
+    <string name="cc_enable">Use a custom config</string>
+    <string name="cc_enable_desc">On: the next connect runs “%1$s” in the chain below</string>
+    <string name="cc_enable_need">Import and select a config below first</string>
+    <string name="cc_err_core_failed">The custom config (Xray core) stopped. Check the config and connect again.</string>
+    <string name="cc_err_expired">This custom config has expired (its author set an expiry date).</string>
+    <string name="cc_err_hysteria_dns">The Hysteria 2 server name could not be resolved.</string>
+    <string name="cc_err_hysteria_last">Hysteria 2 configs can\'t be the last hop: its client has no upstream-proxy option. Put it first in the chain (config → engine), or run it alone.</string>
+    <string name="cc_err_hysteria_solo">Hysteria 2 configs can only run on their own. Set the chain to the config alone.</string>
+    <string name="cc_err_mobile_only">This custom config may only be used on mobile data.</string>
+    <string name="cc_err_no_core">This build does not include the Xray core needed for custom configs.</string>
+    <string name="cc_err_no_hysteria">This build does not contain the Hysteria 2 core (libhysteria.so).</string>
+    <string name="cc_err_psiphon_direct">Psiphon could not reach its own network from here, so it has nothing to hand the config. Use the other direction (Config → Psiphon) on this network: there Psiphon dials through your config.</string>
+    <string name="cc_err_unreachable">The custom config could not reach the internet. Check the config or try another chain.</string>
+    <string name="cc_group_import">Add a config</string>
+    <string name="cc_group_saved">Saved configs (%1$d)</string>
+    <string name="cc_group_subscriptions">Subscriptions</string>
+    <string name="cc_hops_double">Double chain</string>
+    <string name="cc_hops_single">Single · the config alone</string>
+    <string name="cc_hops_triple">Triple chain</string>
+    <string name="cc_import_action">Import</string>
+    <string name="cc_import_camera">Scan a QR code</string>
+    <string name="cc_import_camera_desc">With the camera</string>
+    <string name="cc_import_desc">Link or text, a file, or a QR code. A link by itself is added and kept refreshed as a subscription automatically.</string>
+    <string name="cc_import_failed">Could not import: %1$s</string>
+    <string name="cc_import_file">Import a file</string>
+    <string name="cc_import_file_desc">.npvt, .txt, .json or a QR code image</string>
+    <string name="cc_import_image">QR code from an image</string>
+    <string name="cc_import_image_desc">A screenshot or a saved picture</string>
+    <string name="cc_import_paste">Link or text</string>
+    <string name="cc_import_paste_desc">vless, vmess, trojan, ss, socks, wireguard, hysteria2, npvt links, Xray JSON, or a subscription link - a link by itself is added as a subscription</string>
+    <string name="cc_import_title">Import</string>
+    <string name="cc_imported">%1$d config(s) added</string>
+    <string name="cc_imported_one">Added: %1$s</string>
+    <string name="cc_locked">Locked</string>
+    <string name="cc_locked_desc">Locked by its author: the server details are hidden.</string>
+    <string name="cc_more">More</string>
+    <string name="cc_name">Name</string>
+    <string name="cc_nav_desc">Your own V2Ray/Xray and NapsternetV configs, alone or chained with tvaVPN, Psiphon and Tor</string>
+    <string name="cc_off">Off</string>
+    <string name="cc_password_desc">This NapsternetV config is password protected. Enter the password its author gave you.</string>
+    <string name="cc_password_title">Password</string>
+    <string name="cc_password_wrong">Wrong password. Try again.</string>
+    <string name="cc_paste_clipboard">Paste from clipboard</string>
+    <string name="cc_paste_empty">The clipboard has no text to paste</string>
+    <string name="cc_paste_hint">Paste a subscription link to add it as a subscription, or one or more config links / a JSON config to import them now</string>
+    <string name="cc_ping_all">Test ping for every config</string>
+    <string name="cc_ping_all_desc">Real delay: one request through each config</string>
+    <string name="cc_ping_blocked">Filtered</string>
+    <string name="cc_ping_footer">The ping is a real delay test, like v2rayNG\'s: each config runs in the Xray core exactly as a direct connection would, and one request (generate_204) is sent through it. The number is the time for that request, handshake included. A config that carries nothing reports -1, with the reason: “Offline / server down” — the server\'s name does not resolve or its port is closed; “Filtered” — the network drops or resets the connection to the server (chaining it behind tvaVPN or Tor can help); “No response” — the server accepts connections but the config carried nothing (expired, wrong key or user, or its protocol is blocked); “Invalid config” — the Xray core refuses the config.</string>
+    <string name="cc_ping_invalid">Invalid config</string>
+    <string name="cc_ping_ms">%1$d ms</string>
+    <string name="cc_ping_nonet">No internet</string>
+    <string name="cc_ping_noreply">No response</string>
+    <string name="cc_ping_offline">Offline / server down</string>
+    <string name="cc_ping_one">Test ping</string>
+    <string name="cc_ping_running">Testing…</string>
+    <string name="cc_qr_none">No QR code found</string>
+    <string name="cc_save">Save</string>
+    <string name="cc_saved_footer">Tap a config to use it. Configs are stored encrypted on this device. A locked NapsternetV config keeps its server details hidden: it can be used, chained, renamed and deleted, but not viewed, edited or copied.</string>
+    <string name="cc_scan_prompt">Point the camera at a config QR code</string>
+    <string name="cc_settings_file_detected">This is a tvaVPN settings file, not a config. Import it from Settings → Backup instead.</string>
+    <string name="cc_sub_empty">No subscriptions yet. Paste a subscription link above to add one.</string>
+    <string name="cc_sub_footer">A subscription refreshes when the app is opened (if it has been a while) and whenever you tap Refresh - not continuously in the background. Configs it adds are removed automatically if the subscription stops listing them; configs you added by hand are never touched.</string>
+    <string name="cc_sub_last_error">Last refresh failed: %1$s</string>
+    <string name="cc_sub_last_ok">%1$d config(s) · updated %2$s</string>
+    <string name="cc_sub_never_refreshed">Not refreshed yet</string>
+    <string name="cc_sub_refresh">Refresh</string>
+    <string name="cc_sub_refresh_all">Refresh all subscriptions</string>
+    <string name="cc_sub_refresh_all_desc">Fetches the latest config list from each one now</string>
+    <string name="cc_sub_remove_body">“%1$s” and the configs it added will be removed. Configs you added by hand are kept.</string>
+    <string name="cc_sub_remove_title">Remove this subscription?</string>
+    <string name="cc_title">Custom configs</string>
+    <string name="clean_ip_action">Clean IP</string>
+    <string name="clean_ip_depth">How many addresses to try</string>
+    <string name="clean_ip_footer">Finds a working Cloudflare address for a config whose server has been throttled or blocked, and replaces it automatically - the config\'s own host name (SNI) is never changed. Only configs that front a domain over TLS are eligible; Hysteria and REALITY configs are not.</string>
+    <string name="clean_ip_found">“%1$s”: switched to %2$s (%3$d ms)</string>
+    <string name="clean_ip_none">“%1$s”: no suitable IP was found. The current address was kept - try scanning again, or widen the range in Clean IP settings.</string>
+    <string name="clean_ip_ok">OK</string>
+    <string name="clean_ip_progress">Tested %1$d of %2$d</string>
+    <string name="clean_ip_range">Custom IP range (optional)</string>
+    <string name="clean_ip_range_desc">One or more CIDR blocks or addresses, separated by commas. Leave blank to use a built-in list of Cloudflare ranges.</string>
+    <string name="clean_ip_range_hint">104.16.0.0/13, 172.64.0.0/13</string>
+    <string name="clean_ip_remaining">%1$d more config(s) queued</string>
+    <string name="clean_ip_save">Save</string>
+    <string name="clean_ip_scan_tab">Scan clean IPs of this tab</string>
+    <string name="clean_ip_scan_tab_desc">Scans every eligible config, one after another</string>
+    <string name="clean_ip_scanning">Scanning for “%1$s”…</string>
+    <string name="clean_ip_settings">Clean IP settings</string>
+    <string name="close_drawer">"Close navigation menu"</string>
+    <string name="close_sheet">"Close sheet"</string>
+    <string name="connected_for">Connected for</string>
+    <string name="core_log_level_label">Core log level</string>
+    <string name="crash_copied">Copied</string>
+    <string name="crash_copy">Copy details</string>
+    <string name="crash_dismiss">Dismiss</string>
+    <string name="crash_subtitle">The details below were saved by the crash handler. You can copy them into a bug report.</string>
+    <string name="crash_title">tvaVPN stopped unexpectedly</string>
+    <string name="default_error_message">"Invalid input"</string>
+    <string name="default_popup_window_title" ns1:ignore="ExtraTranslation">"Pop-Up Window"</string>
+    <string name="define_zxingandroidembedded" translatable="false"/>
+    <string name="diag_all_ok">All checks passed — traffic should flow</string>
+    <string name="diag_clear">Clear</string>
+    <string name="diag_copied">Logs copied to clipboard</string>
+    <string name="diag_copied_redacted">Redacted logs copied — IPs and identifiers removed</string>
+    <string name="diag_copy">Copy logs</string>
+    <string name="diag_copy_redacted">Copy logs, addresses removed (safe to share)</string>
+    <string name="diag_empty_logs">No logs yet. Connect or run a test.</string>
+    <string name="diag_idle">Run the test to verify connectivity</string>
+    <string name="diag_log_sealed">The log kept on this device is encrypted with a device key.</string>
+    <string name="diag_logs_title">Logs</string>
+    <string name="diag_problem">A problem was detected — see the failing check</string>
+    <string name="diag_run">Run test</string>
+    <string name="diag_subtitle">Live status of every part of the tunnel</string>
+    <string name="diag_title">Diagnostics &amp; logs</string>
+    <string name="diag_view_logs">View full log</string>
+    <string name="disable_grease_desc">Leave the GREASE values out of the TLS handshake. Off keeps it looking like Chrome’s.</string>
+    <string name="disable_grease_title">Disable GREASE</string>
+    <string name="dns_help">Leave empty for the engine default (1.1.1.1, 1.0.0.1). Invalid entries are ignored.</string>
+    <string name="dns_hint">1.1.1.1, 1.0.0.1</string>
+    <string name="dns_label">DNS inside the tunnel</string>
+    <string name="dropdown_menu">"Dropdown menu"</string>
+    <string name="ech_config_help">Leave empty to let the engine fetch one. Paste a base64 ECHConfigList to use it instead — useful where fetching the default one is what your network blocks. Naming a different domain, as v2rayNG does, needs an engine change and is not possible here.</string>
+    <string name="ech_config_label">ECHConfigList (base64, optional)</string>
+    <string name="ech_desc">Hide the destination name (SNI) from DPI</string>
+    <string name="ech_title">Encrypted Client Hello</string>
+    <string name="endpoint_auto">Auto scan</string>
+    <string name="endpoint_mode">Endpoint</string>
+    <string name="endpoint_peer">Manual IP</string>
+    <string name="endpoint_range">Custom range</string>
+    <string name="err_auto_failed">Smart mode tried every strategy, but none could connect on this network. Try picking a protocol manually.</string>
+    <string name="err_engine_died">The engine stopped unexpectedly.</string>
+    <string name="err_engine_timeout">The engine did not open the local proxy in time.</string>
+    <string name="err_protocol_failed">This protocol could not connect on this network, even with obfuscation. Try Smart mode or another protocol.</string>
+    <string name="err_proxy_ports">Could not open the local proxy ports — they may already be in use by another app.</string>
+    <string name="err_selftest">Tunnel started, but the end-to-end self-test failed. Please try again.</string>
+    <string name="err_tor_blocked">Tor stopped at %1$d%% and could not reach the Tor network. This is what a network that filters Tor looks like. Turn bridges on under Settings → Tor, or use the tvaVPN → Tor mode: Tor is then dialled through the tunnel, where the operator cannot see or block it.</string>
+    <string name="err_tor_bootstrap">Tor could not reach the Tor network in time. On a network that blocks Tor, use the tvaVPN → Tor mode: the connection is then built inside the tunnel, where it cannot be blocked.</string>
+    <string name="err_tor_no_progress">The engine started but Tor never reported any progress towards the Tor network. Check that the connection is up, then try the tvaVPN → Tor mode, which builds Tor inside the tunnel.</string>
+    <string name="err_tor_no_stream">Tor reached the network but no connection could be opened through it. Try again — or use the tvaVPN → Tor mode if this repeats.</string>
+    <string name="exit_country_label">Exit country</string>
+    <string name="exit_help_aether">tvaVPN/WARP chooses its own anycast exit.</string>
+    <string name="exit_help_psiphon">Psiphon treats this as a hard region filter. If it cannot establish there, the app retries automatically with an automatic exit.</string>
+    <string name="exit_help_tor">Tor chooses its own exit node, and a new one per circuit. No setting can pin it to a country.</string>
+    <string name="fast_endpoint_desc">Quick reconnect skips the scan for the last endpoint that worked. With this on it is also checked for speed, and a slow one is replaced by a fresh scan instead of halving your download and upload for the whole session.</string>
+    <string name="fast_endpoint_title">Only reuse a fast endpoint</string>
+    <string name="fgs_start_blocked">Could not start the VPN service right now. Please reopen the app and connect again.</string>
+    <string name="fragment_delay_hint">2-10</string>
+    <string name="fragment_delay_label">Fragment delay range (ms)</string>
+    <string name="fragment_desc">Split the TLS handshake to slip past DPI</string>
+    <string name="fragment_preset_aggressive">Aggressive</string>
+    <string name="fragment_preset_aggressive_desc">Larger fragments with more delay between them. Slower, but slips past stricter filtering. Use this if Balanced still gets blocked.</string>
+    <string name="fragment_preset_balanced">Balanced</string>
+    <string name="fragment_preset_balanced_desc">A reasonable middle ground for most restrictive networks.</string>
+    <string name="fragment_preset_custom">Custom</string>
+    <string name="fragment_preset_custom_desc">Exact fragment-size and delay ranges, for anyone who already knows what to put there.</string>
+    <string name="fragment_preset_default">Default</string>
+    <string name="fragment_preset_default_desc">The engine\'s own built-in fragmentation. A good starting point - try a stronger option below only if sites still fail to load.</string>
+    <string name="fragment_preset_light">Light</string>
+    <string name="fragment_preset_light_desc">Small, fast fragments. Try this first on a network that is only mildly filtered.</string>
+    <string name="fragment_preset_title">Fragmentation strength</string>
+    <string name="fragment_size_hint">16-32</string>
+    <string name="fragment_size_label">Fragment size range</string>
+    <string name="fragment_title">TLS fragmentation</string>
+    <string name="gateway_desc">Sends HTTP/HTTPS through your organization\'s filtering proxy. Adds a hop and lets the organization log your browsing — off unless required.</string>
+    <string name="gateway_title">Use organization Gateway</string>
+    <string name="gool_mode_classic">Classic (over WireGuard)</string>
+    <string name="gool_mode_classic_desc">The older gool (--gool-classic): WireGuard tunneled inside WireGuard. Use it if the modern mode does not connect on your network.</string>
+    <string name="gool_mode_modern">Modern (over MASQUE)</string>
+    <string name="gool_mode_modern_desc">The engine’s default: a WireGuard WARP tunnel carried inside MASQUE, with its own identity registered from inside WARP, so you leave from a foreign location.</string>
+    <string name="gool_mode_title">Gool mode</string>
+    <string name="guardian_group">MONITORING AND RECOVERY</string>
+    <string name="guardian_intro">Protects the active VPN tunnel without frequent announcements or unnecessary reconnects.</string>
+    <string name="guardian_monitor_desc">Checks the real tunnel path periodically. A single slow response is ignored.</string>
+    <string name="guardian_monitor_title">Monitor connection quality</string>
+    <string name="guardian_nav_desc">Quietly monitors tunnel health and can recover poor connections</string>
+    <string name="guardian_recovery_desc">Restarts the engine only after repeated critical latency while the data path is idle.</string>
+    <string name="guardian_recovery_title">Recover critical quality drops</string>
+    <string name="guardian_safety_group">HOW IT BEHAVES</string>
+    <string name="guardian_safety_note">Guardian adds no extra popup or notification of its own, and normal connection and disconnection controls remain unchanged. Automatic recovery simply restarts the engine quietly in the background to rebuild the tunnel path. Dead-tunnel recovery remains part of the VPN service safety watchdog.</string>
+    <string name="guardian_title">Smart Connection Guardian</string>
+    <string name="in_progress">In progress</string>
+    <string name="indeterminate">Partially checked</string>
+    <string name="ip_both">Both</string>
+    <string name="ip_checking">Checking IP…</string>
+    <string name="ip_server_label">Server IP</string>
+    <string name="ip_unavailable">IP unavailable</string>
+    <string name="ip_v4">IPv4</string>
+    <string name="ip_v6">IPv6</string>
+    <string name="ip_version">IP version</string>
+    <string name="ip_your_label">Your IP</string>
+    <string name="ipv6_leak_desc">Route IPv6 traffic through the tunnel as well</string>
+    <string name="ipv6_leak_title">IPv6 Leak Protection</string>
+    <string name="keepalive_default">Default</string>
+    <string name="keepalive_label">Keepalive (sec)</string>
+    <string name="kill_switch_desc">Block all traffic if the tunnel drops unexpectedly, so nothing leaks outside the VPN</string>
+    <string name="kill_switch_title">Kill Switch</string>
+    <string name="language_desc">Applies to the whole app, including the notification, the Quick Settings tile and the home-screen widget. Persian switches the layout right to left.</string>
+    <string name="language_english">English</string>
+    <string name="language_persian">فارسی</string>
+    <string name="language_system">Follow the phone</string>
+    <string name="language_title">Language</string>
+    <string name="library_zxingandroidembedded_author" translatable="false">JourneyApps</string>
+    <string name="library_zxingandroidembedded_authorWebsite" translatable="false">https://journeyapps.com/</string>
+    <string name="library_zxingandroidembedded_isOpenSource" translatable="false">true</string>
+    <string name="library_zxingandroidembedded_libraryDescription" translatable="false">Barcode scanning library for Android, using ZXing for decoding.</string>
+    <string name="library_zxingandroidembedded_libraryName" translatable="false">ZXing Android Embedded</string>
+    <string name="library_zxingandroidembedded_libraryVersion" translatable="false"/>
+    <string name="library_zxingandroidembedded_libraryWebsite" translatable="false">https://github.com/journeyapps/zxing-android-embedded</string>
+    <string name="library_zxingandroidembedded_licenseId" translatable="false">apache_2_0</string>
+    <string name="library_zxingandroidembedded_repositoryLink" translatable="false">https://github.com/journeyapps/zxing-android-embedded</string>
+    <string name="m3c_bottom_sheet_collapse_description">Collapse bottom sheet</string>
+    <string name="m3c_bottom_sheet_dismiss_description">Dismiss bottom sheet</string>
+    <string name="m3c_bottom_sheet_drag_handle_description">Drag handle</string>
+    <string name="m3c_bottom_sheet_expand_description">Expand bottom sheet</string>
+    <string name="m3c_bottom_sheet_pane_title">Bottom Sheet</string>
+    <string name="m3c_date_input_headline">Entered date</string>
+    <string name="m3c_date_input_headline_description">Entered date: %1$s</string>
+    <string name="m3c_date_input_invalid_for_pattern">Date does not match expected pattern: %1$s</string>
+    <string name="m3c_date_input_invalid_not_allowed">Date not allowed: %1$s</string>
+    <string name="m3c_date_input_invalid_year_range">
+        Date out of expected year range %1$s - %2$s
+    </string>
+    <string name="m3c_date_input_label">Date</string>
+    <string name="m3c_date_input_no_input_description">None</string>
+    <string name="m3c_date_input_title">Select date</string>
+    <string name="m3c_date_picker_headline">"Selected date"</string>
+    <string name="m3c_date_picker_headline_description">Current selection: %1$s</string>
+    <string name="m3c_date_picker_navigate_to_year_description">Navigate to year %1$s</string>
+    <string name="m3c_date_picker_no_selection_description">None</string>
+    <string name="m3c_date_picker_scroll_to_earlier_years">Scroll to show earlier years</string>
+    <string name="m3c_date_picker_scroll_to_later_years">Scroll to show later years</string>
+    <string name="m3c_date_picker_switch_to_calendar_mode">Switch to calendar input mode</string>
+    <string name="m3c_date_picker_switch_to_day_selection">
+        "Swipe to select a year, or tap to switch back to selecting a day"
+    </string>
+    <string name="m3c_date_picker_switch_to_input_mode">Switch to text input mode</string>
+    <string name="m3c_date_picker_switch_to_next_month">"Change to next month"</string>
+    <string name="m3c_date_picker_switch_to_previous_month">"Change to previous month"</string>
+    <string name="m3c_date_picker_switch_to_year_selection">"Switch to selecting a year"</string>
+    <string name="m3c_date_picker_title">"Select date"</string>
+    <string name="m3c_date_picker_today_description">Today</string>
+    <string name="m3c_date_picker_year_picker_pane_title">Year picker visible</string>
+    <string name="m3c_date_range_input_invalid_range_input">Invalid date range input</string>
+    <string name="m3c_date_range_input_title">Enter dates</string>
+    <string name="m3c_date_range_picker_day_in_range">In range</string>
+    <string name="m3c_date_range_picker_end_headline">End date</string>
+    <string name="m3c_date_range_picker_scroll_to_next_month">Scroll to show the next month</string>
+    <string name="m3c_date_range_picker_scroll_to_previous_month">Scroll to show the previous month</string>
+    <string name="m3c_date_range_picker_start_headline">Start date</string>
+    <string name="m3c_date_range_picker_title">Select dates</string>
+    <string name="m3c_dialog">"Dialog"</string>
+    <string name="m3c_dropdown_menu_collapsed">Collapsed</string>
+    <string name="m3c_dropdown_menu_expanded">Expanded</string>
+    <string name="m3c_dropdown_menu_toggle">Toggle dropdown menu</string>
+    <string name="m3c_search_bar_search">Search</string>
+    <string name="m3c_snackbar_dismiss">Dismiss</string>
+    <string name="m3c_suggestions_available">Suggestions below</string>
+    <string name="m3c_time_picker_am">AM</string>
+    <string name="m3c_time_picker_hour">Hour</string>
+    <string name="m3c_time_picker_hour_24h_suffix">%1$d hours</string>
+    <string name="m3c_time_picker_hour_selection">Select hour</string>
+    <string name="m3c_time_picker_hour_suffix">%1$d o\'clock</string>
+    <string name="m3c_time_picker_hour_text_field">for hour</string>
+    <string name="m3c_time_picker_minute">Minute</string>
+    <string name="m3c_time_picker_minute_selection">Select minutes</string>
+    <string name="m3c_time_picker_minute_suffix">%1$d minutes</string>
+    <string name="m3c_time_picker_minute_text_field">for minutes</string>
+    <string name="m3c_time_picker_period_toggle_description">Select AM or PM</string>
+    <string name="m3c_time_picker_pm">PM</string>
+    <string name="m3c_tooltip_long_press_label">Show tooltip</string>
+    <string name="m3c_tooltip_pane_description">Tooltip</string>
+    <string name="manual_peer_hint">e.g. 162.159.192.1:443</string>
+    <string name="manual_peer_label">Endpoint (ip:port)</string>
+    <string name="manual_range_help">The engine scans ONLY the range(s) you type. Accepts 8.6.112.x, 8.6.112.0/24, or a single IP. Separate multiple ranges with commas.</string>
+    <string name="manual_range_hint">e.g. 8.6.112.0/24, 188.114.96.0/24</string>
+    <string name="manual_range_label">IP range(s) to scan</string>
+    <string name="masque_http2">MASQUE over HTTP/2</string>
+    <string name="masque_http2_desc">Use HTTP/2 for the MASQUE transport</string>
+    <string name="menu_open">Open menu</string>
+    <string name="meta_latency">Latency</string>
+    <string name="meta_ping_strength">Ping strength</string>
+    <string name="meta_pipeline">Connection</string>
+    <string name="meta_protocol">Protocol</string>
+    <string name="mtu_custom_help">Any value between 1280 and 9000. Lower it if some sites or Telegram stall on a tunnel that is otherwise up.</string>
+    <string name="mtu_custom_label">Or type an MTU</string>
+    <string name="mtu_custom_range">Enter a number between %1$d and %2$d.</string>
+    <string name="mtu_desc">Lower values (1280) are safer on mobile data</string>
+    <string name="mtu_label">MTU</string>
+    <string name="navigation_menu">"Navigation menu"</string>
+    <string name="no_data_check_desc">Skip the engine\'s end-to-end data probe after connecting</string>
+    <string name="no_data_check_title">No Data Check</string>
+    <string name="no_profile_retry_desc">Do not fall back to alternate WireGuard profiles</string>
+    <string name="no_profile_retry_title">No Profile Retry</string>
+    <string name="noize_aggressive">Aggressive</string>
+    <string name="noize_balanced">Balanced</string>
+    <string name="noize_desc">Inject junk + fake handshakes so DPI can\u2019t fingerprint the tunnel</string>
+    <string name="noize_firewall">Firewall</string>
+    <string name="noize_gfw">GFW</string>
+    <string name="noize_light">Light</string>
+    <string name="noize_off">Off</string>
+    <string name="noize_title">Obfuscation (Amnezia)</string>
+    <string name="not_selected">Not selected</string>
+    <string name="notif_action_disconnect">Disconnect</string>
+    <string name="notif_channel">VPN status</string>
+    <string name="notif_channel_desc">Shows the tvaVPN connection status</string>
+    <string name="notif_title">tvaVPN</string>
+    <string name="onboarding_body_1">A fast, secure tunnel that beats censorship. One tap connects you through MASQUE, WireGuard or WARP×2.</string>
+    <string name="onboarding_body_2">Smart mode analyzes your network and picks the protocol that actually works, with anti-DPI obfuscation when needed.</string>
+    <string name="onboarding_body_3">No accounts, no logs, no trackers. Android will ask for VPN permission on your first connect; that is the system keeping you in control.</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_start">Get started</string>
+    <string name="onboarding_title_1">Welcome to tvaVPN</string>
+    <string name="onboarding_title_2">Smart protocol selection</string>
+    <string name="onboarding_title_3">Private by design</string>
+    <string name="ping_hint">Tap to measure again</string>
+    <string name="ping_label">Ping</string>
+    <string name="ping_measuring">Measuring…</string>
+    <string name="ping_quality_excellent">Excellent</string>
+    <string name="ping_quality_fair">Fair</string>
+    <string name="ping_quality_good">Good</string>
+    <string name="ping_quality_measuring">Measuring</string>
+    <string name="ping_quality_offline">Not connected</string>
+    <string name="ping_quality_poor">Poor</string>
+    <string name="ping_unavailable">N/A</string>
+    <string name="protocol">Protocol</string>
+    <string name="protocol_auto">Smart</string>
+    <string name="protocol_auto_ladder">Smart tries one route at a time on this backend. Racing needs the plain tvaVPN backend and automatic endpoint selection.</string>
+    <string name="protocol_auto_race">Smart tries two routes at the same time here and remembers which one worked on this network, so the next connect is quick.</string>
+    <string name="protocol_forced_reverse">Fixed to MASQUE over HTTP/2 in this mode. Tor carries TCP only and WARP’s WireGuard endpoints answer on UDP alone, so the engine refuses WireGuard and WARP×2 here.</string>
+    <string name="protocol_gool">WARP×2</string>
+    <string name="protocol_masque">MASQUE</string>
+    <string name="protocol_mim">MASQUE×2</string>
+    <string name="protocol_wireguard">WireGuard</string>
+    <string name="proxy_endpoints_hint">Fixed addresses — enter one of these in the other app\'s proxy settings:</string>
+    <string name="proxy_http_label">HTTP proxy</string>
+    <string name="proxy_mode_desc">Run a local SOCKS5/HTTP proxy instead of routing the whole device</string>
+    <string name="proxy_mode_title">Proxy mode (no system VPN)</string>
+    <string name="proxy_socks_label">SOCKS5 proxy</string>
+    <string name="qs_tile_label">tvaVPN</string>
+    <string name="quality_degraded">Connection quality has been poor for a while</string>
+    <string name="quick_reconnect">Quick reconnect</string>
+    <string name="quick_reconnect_desc">Reconnect faster after a drop</string>
+    <string name="range_end">"Range end"</string>
+    <string name="range_start">"Range start"</string>
+    <string name="reconnect_attempt">Attempt %1$d of %2$d</string>
+    <string name="reconnect_limit_label">Max reconnect attempts</string>
+    <string name="reconnect_secs_label">Reconnect seconds (0 = default)</string>
+    <string name="reprovision_desc">If Cloudflare stops accepting the saved device identity, register a fresh one automatically instead of holding a tunnel that connects but carries no traffic.</string>
+    <string name="reprovision_title">Replace a refused identity</string>
+    <string name="reset_confirm_body">Every setting goes back to its default, including endpoint ranges, routing rules and enrolment details.</string>
+    <string name="reset_confirm_ok">Reset</string>
+    <string name="reset_confirm_title">Reset all settings?</string>
+    <string name="reset_done">Settings restored to defaults</string>
+    <string name="reset_settings">Reset all settings to defaults</string>
+    <string name="route_block_hint">ads.example.com, port:25</string>
+    <string name="route_block_label">Never connect (block)</string>
+    <string name="route_direct_hint">private, bank.example.com</string>
+    <string name="route_direct_label">Bypass tunnel (direct)</string>
+    <string name="route_sniff_desc">Reads the site name from the TLS/HTTP handshake, so the domain rules above also work on Android, where the engine otherwise only sees an IP address.</string>
+    <string name="route_sniff_ms_hint">400</string>
+    <string name="route_sniff_ms_label">Name wait window (ms)</string>
+    <string name="route_sniff_title">Match domain rules behind the tunnel</string>
+    <string name="routes_help">Comma separated. Supports example.com, full:, keyword:, regexp:, 10.0.0.0/8, port:25 and private. Block is checked first, then direct.</string>
+    <string name="scan_balanced">Balanced</string>
+    <string name="scan_ironclad">Ironclad</string>
+    <string name="scan_mode">Scan mode</string>
+    <string name="scan_stealth">Stealth</string>
+    <string name="scan_thorough">Thorough</string>
+    <string name="scan_turbo">Turbo</string>
+    <string name="secs_hint">0</string>
+    <string name="section_core">Core</string>
+    <string name="section_engine_tuning">Engine tuning</string>
+    <string name="section_reset">Reset</string>
+    <string name="section_routes">Routing rules</string>
+    <string name="section_routing">Routing</string>
+    <string name="section_security">Security &amp; stability</string>
+    <string name="section_tor">Tor</string>
+    <string name="section_transport">Transport &amp; anti-DPI</string>
+    <string name="section_upstream">Upstream proxy (chaining)</string>
+    <string name="section_zerotrust">Zero Trust (organization)</string>
+    <string name="secure_via">Secure tunnel via %1$s</string>
+    <string name="selected">Selected</string>
+    <string name="settings_ask_ai_cd">Ask AI about %1$s</string>
+    <string name="settings_ask_ai_prompt">Explain the setting “%1$s”: what it is, what it does, and what value I should use.</string>
+    <string name="settings_hero_title">Your tunnel</string>
+    <string name="settings_locked_hint">Disconnect to change the tunnel settings. They are handed to the engine when it starts.</string>
+    <string name="settings_status_locked">Locked while connected</string>
+    <string name="settings_status_ready">Ready to edit</string>
+    <string name="settings_subtitle">Connection, apps, security and diagnostics</string>
+    <string name="settings_title">Settings</string>
+    <string name="share_auth_bad_user">Username: 1–64 Latin characters, no spaces or ":".</string>
+    <string name="share_auth_cancel">Cancel</string>
+    <string name="share_auth_edit">Edit</string>
+    <string name="share_auth_edit_title">Share username &amp; password</string>
+    <string name="share_auth_note">The other device must sign in to the proxy with these:</string>
+    <string name="share_auth_save">Save</string>
+    <string name="share_auth_saved">Credentials saved</string>
+    <string name="share_auth_short_pass">Password must be at least %1$d Latin characters.</string>
+    <string name="share_auth_toggle">Require username &amp; password</string>
+    <string name="share_auth_toggle_desc">Optional. Devices must sign in before using the share.</string>
+    <string name="share_auth_toggle_desc_home">Optional — recommended on shared or public Wi‑Fi. Devices must sign in before using the share.</string>
+    <string name="share_check_label">Protection check page</string>
+    <string name="share_copied">Address copied</string>
+    <string name="share_copied_all">All details copied</string>
+    <string name="share_copy">Copy address</string>
+    <string name="share_copy_all">Copy all details</string>
+    <string name="share_copy_all_label">tvaVPN share details</string>
+    <string name="share_direct_paused">Your Direct (bypass) rules are paused while sharing, so nothing can leave outside the tunnel.</string>
+    <string name="share_howto">On the other device (same network), open its proxy settings and enter one of these addresses:</string>
+    <string name="share_http_label">HTTP proxy — enter in system proxy settings</string>
+    <string name="share_iface_bt">Bluetooth tethering address</string>
+    <string name="share_iface_eth">Ethernet address</string>
+    <string name="share_iface_hotspot">Wi‑Fi hotspot address</string>
+    <string name="share_iface_usb">USB / Ethernet tethering address</string>
+    <string name="share_iface_wifi">Wi‑Fi address</string>
+    <string name="share_ip_label">Phone IP address</string>
+    <string name="share_mode_detected">● Network detected</string>
+    <string name="share_mode_home">Home Wi‑Fi</string>
+    <string name="share_mode_home_desc">Phone and devices on the same router</string>
+    <string name="share_mode_mobile">Mobile hotspot</string>
+    <string name="share_mode_mobile_desc">Devices join this phone\'s hotspot (mobile data)</string>
+    <string name="share_mode_not_detected">○ Not active</string>
+    <string name="share_mode_title">Sharing mode</string>
+    <string name="share_need_connect">Connect the VPN first — sharing routes other devices through this phone’s tunnel.</string>
+    <string name="share_need_wifi">Join a Wi‑Fi network or turn on your hotspot to share.</string>
+    <string name="share_needs_reconnect">Your Direct (bypass) routing rules were active when this session started. To guarantee no IP leak, LAN sharing stays closed: disconnect and connect again (rules are paused automatically while sharing).</string>
+    <string name="share_off_hint">Turn on sharing, pick a mode, and the addresses to enter on the other device appear here.</string>
+    <string name="share_open_hotspot">Open hotspot settings</string>
+    <string name="share_other_addresses">Also reachable on these links (use the one the device is connected by)</string>
+    <string name="share_pac_label">Automatic proxy (PAC) URL — easiest, fail‑closed</string>
+    <string name="share_pass_label">Proxy password</string>
+    <string name="share_pass_rotate">Generate a new password</string>
+    <string name="share_pass_rotated">New proxy password generated</string>
+    <string name="share_port_busy">Ports 10810/10811 are used by another app on this network. Close it and toggle sharing again.</string>
+    <string name="share_setup_label">Setup page + WebRTC test (open on the other device)</string>
+    <string name="share_socks_label">SOCKS5 proxy — for apps that support SOCKS</string>
+    <string name="share_starting">Starting sharing… if this takes more than a few seconds, toggle the switch off and on again.</string>
+    <string name="share_status_live">Sharing live · %1$d connection(s)</string>
+    <string name="share_step_common_check">Open the check page below in a browser: it only loads when the device is protected.</string>
+    <string name="share_step_common_proxy">In its Wi‑Fi / network settings choose Proxy → Automatic and paste the PAC URL (or Manual with the HTTP proxy). For apps and TUN clients (v2rayN, NekoBox, sing‑box) use the SOCKS5 address with remote DNS.</string>
+    <string name="share_step_home_1">Make sure the other device is on the same Wi‑Fi as this phone.</string>
+    <string name="share_step_mobile_1">Connect the other device to this phone\'s hotspot.</string>
+    <string name="share_steps_title">How to connect</string>
+    <string name="share_subtitle">Use this phone as a proxy for your laptop or another phone</string>
+    <string name="share_switch_to_home">Use Home Wi‑Fi mode</string>
+    <string name="share_switch_to_mobile">Use Mobile hotspot mode</string>
+    <string name="share_title">Share VPN</string>
+    <string name="share_toggle">Share on this network</string>
+    <string name="share_toggle_desc">Opens a local proxy that devices on the same Wi‑Fi or hotspot can use</string>
+    <string name="share_user_label">Proxy username</string>
+    <string name="share_values_home">Enter on the other device (same Wi‑Fi)</string>
+    <string name="share_values_mobile">Enter on the device connected to this hotspot</string>
+    <string name="share_wait_home">Connect this phone to your home Wi‑Fi. The addresses appear here automatically.</string>
+    <string name="share_wait_mobile">Turn on the Wi‑Fi hotspot (or USB/Bluetooth tethering) on this phone. The addresses appear here automatically.</string>
+    <string name="share_warning">Only devices on this local network that enter the username and password below can use the proxy. Their traffic still leaves through your exit IP, so share it only with devices you trust.</string>
+    <string name="share_warning_unconfigured">Only traffic sent to the share is protected. A device or app that is not set to use it goes out on its own connection — Android does not let an app force tethered devices through the VPN.</string>
+    <string name="share_webrtc_desc">A browser set to use a proxy still sends WebRTC on its own connection, which can reveal the device\'s real IP. Open the setup page below on the other device: it tests WebRTC live and gives a one‑click lock for Chrome, Edge, Brave and Firefox. Phones: use v2rayNG / NekoBox in VPN mode with the SOCKS5 address.</string>
+    <string name="share_webrtc_title">WebRTC (real‑IP leak in browsers)</string>
+    <string name="share_zero_leak_desc">Everything the other device sends through the share leaves via the VPN tunnel only: DNS is resolved inside the tunnel, UDP is relayed through it, local/private targets are blocked, and if the tunnel drops, connections fail instead of going direct.</string>
+    <string name="share_zero_leak_on">Zero‑leak guard active</string>
+    <string name="smart_reconnect_desc">Stop and report an error after a limited number of failed restarts</string>
+    <string name="smart_reconnect_title">Smart Reconnect</string>
+    <string name="split_exclude">Except selected</string>
+    <string name="split_include">Only selected</string>
+    <string name="split_mode">Split tunneling</string>
+    <string name="split_off">Off</string>
+    <string name="split_select_apps">Choose apps (%1$d)</string>
+    <string name="state_analyzing">Analyzing your network (Smart mode)…</string>
+    <string name="state_connected">Connected</string>
+    <string name="state_connecting">Connecting…</string>
+    <string name="state_disconnecting">Disconnecting…</string>
+    <string name="state_empty">Empty</string>
+    <string name="state_error">Connection failed</string>
+    <string name="state_idle">Disconnected</string>
+    <string name="state_killswitch">Kill switch active - traffic blocked</string>
+    <string name="state_launching">Starting engine…</string>
+    <string name="state_off">Off</string>
+    <string name="state_on">On</string>
+    <string name="state_reconnecting">Reconnecting…</string>
+    <string name="state_smart_plus_racing">Trying several routes at once…</string>
+    <string name="state_tor_bootstrap">Building Tor circuits…</string>
+    <string name="state_tor_bootstrap_pct">Reaching the Tor network… %1$d%%</string>
+    <string name="state_tor_bridges">Tor is being blocked — trying bridges…</string>
+    <string name="state_verifying">Verifying connection…</string>
+    <string name="status_bar_notification_info_overflow">999+</string>
+    <string name="strict_kill_switch_desc">Keep blocking even after a manual disconnect, until you lift it</string>
+    <string name="strict_kill_switch_title">Strict Kill Switch</string>
+    <string name="switch_role">Switch</string>
+    <string name="tab">Tab</string>
+    <string name="tamper_body">This copy of tvaVPN is not signed with the official key, so it may have been modified or repackaged. A VPN app can see all of your traffic, so it has been stopped. Please uninstall it and install the app only from the official GitHub releases page.</string>
+    <string name="tamper_cert">This copy\'s signing certificate (SHA-256): %1$s</string>
+    <string name="tamper_exit">Exit</string>
+    <string name="tamper_open_official">Open official GitHub page</string>
+    <string name="tamper_short">Unofficial copy: connection blocked</string>
+    <string name="tamper_title">Unofficial or modified copy</string>
+    <string name="tap_to_connect">Tap to connect securely</string>
+    <string name="tap_to_disconnect">Tap to disconnect</string>
+    <string name="team_auth_desc">Join a Cloudflare Zero Trust organization instead of consumer WARP. Leave off for normal use.</string>
+    <string name="team_auth_email">E-mail code</string>
+    <string name="team_auth_email_note">Sign in below before connecting, and the connect runs without you. If you do not, the code is asked for while connecting: the organization e-mails it and a dialog appears. Keep the app open then — the connection waits up to five minutes for it.</string>
+    <string name="team_auth_label">Enrolment method</string>
+    <string name="team_auth_off">Off</string>
+    <string name="team_auth_service">Service token</string>
+    <string name="team_auth_service_note">Runs without you: the engine exchanges the client ID and secret for a token by itself.</string>
+    <string name="team_auth_token">Enrolment token</string>
+    <string name="team_help">Just the name — acme means acme.cloudflareaccess.com.</string>
+    <string name="team_hint">acme</string>
+    <string name="team_label">Team name</string>
+    <string name="template_percent"><ns2:g id="percentage">%1$d</ns2:g> percent.</string>
+    <string name="tls_ciphers_help">Leave empty for the recommended default (Chrome’s list, shown above). Otherwise BoringSSL names separated by “:”, e.g. ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256. An unknown name stops the engine at startup.</string>
+    <string name="tls_ciphers_label">TLS 1.2 cipher suites</string>
+    <string name="tls_group_footer">Applies to MASQUE over HTTP/2, the WARP API calls and the ECH lookup. HTTP/3 (QUIC) offers TLS 1.3 only, so it lists no TLS 1.2 ciphers.</string>
+    <string name="tls_groups_hint">X25519:P-256</string>
+    <string name="tls_groups_label">TLS groups</string>
+    <string name="tls_verify_desc">Reject a server whose certificate doesn’t check out. Off accepts a self-signed or mismatched certificate, which is less safe.</string>
+    <string name="tls_verify_title">Verify TLS certificates</string>
+    <string name="tooltip_description">tooltip</string>
+    <string name="tooltip_label">show tooltip</string>
+    <string name="tor_bridge_lines_desc">One per line, in the format bridges.torproject.org hands out. Leave empty to use the bridges the app fetches for your country. A line naming a transport the app does not ship is ignored.</string>
+    <string name="tor_bridge_lines_hint">obfs4 192.0.2.55:38114 &lt;FINGERPRINT> cert=… iat-mode=0</string>
+    <string name="tor_bridge_lines_title">Own bridge lines</string>
+    <string name="tor_bridges_always">Always</string>
+    <string name="tor_bridges_auto">Automatic</string>
+    <string name="tor_bridges_desc">How Tor reaches the network when it is blocked.</string>
+    <string name="tor_bridges_not_needed">Not needed in this mode: Tor is dialled through the tvaVPN tunnel, so the network you are on never sees it.</string>
+    <string name="tor_bridges_off">Off</string>
+    <string name="tor_bridges_title">Bridges</string>
+    <string name="tor_check_desc">The address Tor must reach before the bootstrap counts as working. Change it only if bootstrap keeps failing on a Tor that seems fine — the default target is itself blocked on some networks.</string>
+    <string name="tor_check_hint">check.torproject.org:443</string>
+    <string name="tor_check_title">Reachability check</string>
+    <string name="tor_country_auto">Detect automatically</string>
+    <string name="tor_country_desc">Which country bridgedb hands out bridges for. Detection asks the network where you are, which is the request most likely to fail here.</string>
+    <string name="tor_country_title">Bridge country</string>
+    <string name="tor_direct_auto">Automatic (75 s)</string>
+    <string name="tor_direct_secs_desc">How long Tor tries the direct path before falling back to bridges. Shorten it where Tor is definitely blocked.</string>
+    <string name="tor_direct_secs_title">Bootstrap patience</string>
+    <string name="tor_direct_secs_value">%1$d seconds</string>
+    <string name="tor_group_footer">Tor carries TCP only — in every app, on every platform. tvaVPN answers DNS over TCP inside Tor and drops other UDP, so QUIC-capable apps fall back to TCP. That is normal and nothing is leaking: dropped UDP goes nowhere, least of all around Tor. Expect noticeably higher latency, and expect the first connect to take a while — Tor downloads its directory before it can build a circuit.</string>
+    <string name="traffic_download">Download</string>
+    <string name="traffic_total">Total %1$s</string>
+    <string name="traffic_upload">Upload</string>
+    <string name="tva_ai_analyze_logs">Analyze connection log</string>
+    <string name="tva_ai_analyze_logs_prompt">Analyze the redacted connection log provided by the app. Separate observed facts from likely causes and give the most useful next step.</string>
+    <string name="tva_ai_api_key">Gemini API key</string>
+    <string name="tva_ai_applied_next_connect">Settings saved. They will be used on the next connection.</string>
+    <string name="tva_ai_apply">Review and apply suggestion</string>
+    <string name="tva_ai_apply_connected_message">The VPN is connected. Applying these settings now requires restarting the main VPN tunnel. You can also save them for the next connection.</string>
+    <string name="tva_ai_apply_later">Apply on next connection</string>
+    <string name="tva_ai_apply_message">The validated settings will be saved for your next VPN connection.</string>
+    <string name="tva_ai_apply_reconnect">Apply and reconnect now</string>
+    <string name="tva_ai_apply_title">Apply suggested settings?</string>
+    <string name="tva_ai_ask_ai_rows_caption">Settings pages</string>
+    <string name="tva_ai_ask_ai_rows_desc">A small sparkle button next to every row on the Connection, Transport, DNS/Routing, Upstream, Zero Trust, Apps, Security and Engine pages, to ask Gemini about that exact setting. Turn off if it feels repetitive.</string>
+    <string name="tva_ai_ask_ai_rows_title">Show “ask AI” on settings rows</string>
+    <string name="tva_ai_auto_apply_caption">Applying suggestions</string>
+    <string name="tva_ai_auto_apply_desc">Apply a suggestion the moment it arrives, without asking first. If you\'re connected, this reconnects the tunnel right away with the new settings.</string>
+    <string name="tva_ai_auto_apply_footer">Off by default. While this is on, the confirmation dialog is skipped entirely, including the reconnect warning - you can still tap Undo on any chat reply after it is applied.</string>
+    <string name="tva_ai_auto_apply_title">Apply suggestions automatically</string>
+    <string name="tva_ai_benefit_label">Possible benefit: %1$s</string>
+    <string name="tva_ai_confidence_label">Confidence: %1$d%%</string>
+    <string name="tva_ai_configuration">Gemini connection</string>
+    <string name="tva_ai_copy_proposal">Copy proposal details</string>
+    <string name="tva_ai_generic_error">TVA AI could not complete the request.</string>
+    <string name="tva_ai_go_to_settings">Go to TVA AI settings</string>
+    <string name="tva_ai_hide_key">Hide API key</string>
+    <string name="tva_ai_key_cleared">The saved Gemini API key was removed from this device.</string>
+    <string name="tva_ai_key_invalid">The API key contains unsupported characters. Check that it was copied correctly.</string>
+    <string name="tva_ai_key_save_failed">Android could not securely save the API key. Check device security storage and try again.</string>
+    <string name="tva_ai_latency_improved">📶 Result: latency went from %1$d ms to %2$d ms — improved.</string>
+    <string name="tva_ai_latency_unchanged">📶 Result: latency barely changed (%1$d → %2$d ms).</string>
+    <string name="tva_ai_latency_worse">📶 Result: latency went from %1$d ms to %2$d ms — got worse.</string>
+    <string name="tva_ai_message_hint">Write a message…</string>
+    <string name="tva_ai_missing_key">Enter your Gemini API key first.</string>
+    <string name="tva_ai_model">Model ID</string>
+    <string name="tva_ai_model_invalid">Enter a valid Gemini model ID using English letters, numbers, dots, underscores, or hyphens.</string>
+    <string name="tva_ai_nav_desc">Your technical assistant for TVA settings and diagnostics</string>
+    <string name="tva_ai_open_settings">Open TVA AI settings</string>
+    <string name="tva_ai_optimize">Review my settings</string>
+    <string name="tva_ai_optimize_prompt">Review my current TVA VPN settings and suggest only safe, evidence-based improvements. Do not apply anything yet.</string>
+    <string name="tva_ai_proposal_rejected">The suggestion was rejected by the local safety checks: %1$s</string>
+    <string name="tva_ai_ready_hint">Enter your Gemini API key, then test the connection.</string>
+    <string name="tva_ai_reconnect_started">Settings applied. VPN reconnection has started.</string>
+    <string name="tva_ai_reconnect_timeout">The VPN did not finish disconnecting in time. The new settings were saved, but the active tunnel was not restarted.</string>
+    <string name="tva_ai_reconnecting">Applying settings and restarting the VPN…</string>
+    <string name="tva_ai_response_received">Response received.</string>
+    <string name="tva_ai_route_notice">TVA AI requests are sent through your main VPN connection, like the rest of the app\'s traffic. No separate route is opened. Google receives the prompts sent to Gemini; your API key quota and billing rules apply.</string>
+    <string name="tva_ai_route_retrying">The VPN connection was unstable. Retrying…</string>
+    <string name="tva_ai_route_starting">Sending through your connected VPN…</string>
+    <string name="tva_ai_save">Save</string>
+    <string name="tva_ai_saved">API settings saved securely on this device.</string>
+    <string name="tva_ai_send">Send message</string>
+    <string name="tva_ai_setting_fast_endpoint_only">Fast endpoint only</string>
+    <string name="tva_ai_setting_fragment_preset">Fragmentation preset</string>
+    <string name="tva_ai_setting_ip_version">IP version</string>
+    <string name="tva_ai_setting_keepalive">Keepalive</string>
+    <string name="tva_ai_setting_mtu">MTU</string>
+    <string name="tva_ai_setting_noize">Noize profile</string>
+    <string name="tva_ai_setting_protocol">Protocol</string>
+    <string name="tva_ai_setting_quick_reconnect">Quick reconnect</string>
+    <string name="tva_ai_setting_scan_mode">Scan mode</string>
+    <string name="tva_ai_settings_nav_desc">Gemini API key, model, and connection test</string>
+    <string name="tva_ai_settings_required">Set up your Gemini API key in TVA AI settings before chatting.</string>
+    <string name="tva_ai_settings_title">TVA AI settings</string>
+    <string name="tva_ai_show_key">Show API key</string>
+    <string name="tva_ai_subtitle">TVA technical assistant</string>
+    <string name="tva_ai_test">Test connection</string>
+    <string name="tva_ai_title">TVA AI</string>
+    <string name="tva_ai_tradeoff_label">Trade-off: %1$s</string>
+    <string name="tva_ai_undo">Undo applied settings</string>
+    <string name="tva_ai_undo_done">Previous settings restored.</string>
+    <string name="tva_ai_undo_reconnect_started">Previous settings restored. VPN reconnection has started.</string>
+    <string name="tva_ai_verified">Connection verified</string>
+    <string name="tva_ai_vpn_not_connected">TVA AI needs an active VPN connection. Connect to the VPN first, then try again.</string>
+    <string name="tva_ai_welcome">Hello! I am TVA AI. I know the technical structure of this version of TVA VPN. You can ask me about settings, connection logs, protocols, or request a safe settings review.</string>
+    <string name="tva_ai_working">TVA AI is working…</string>
+    <string name="update_available">Version %1$s is available.</string>
+    <string name="update_changes_full">Open full changelog</string>
+    <string name="update_changes_loading">Loading changes…</string>
+    <string name="update_changes_title">What\'s new</string>
+    <string name="update_changes_unavailable">Could not load the changes.</string>
+    <string name="update_check_again">Check again</string>
+    <string name="update_check_now">Check for updates</string>
+    <string name="update_checking">Checking the latest release…</string>
+    <string name="update_current_version">Current version: %1$s</string>
+    <string name="update_download_install">Download &amp; install</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_err_rejected">The downloaded file was rejected and deleted (%1$s). This can happen on a bad network; try again.</string>
+    <string name="update_error">Could not check for updates: %1$s</string>
+    <string name="update_footer">Downloads only ever come from the official tvaVPN GitHub releases page, straight into the app — never through a browser — and the file is checked against this app\'s own signing certificate before anything is installed. Android will still ask you to confirm the install itself.</string>
+    <string name="update_hash_mismatch">Warning: the downloaded file\'s checksum does not match the one published with this release. Installing is not recommended — try again later or download manually from the releases page.</string>
+    <string name="update_install_now">Install</string>
+    <string name="update_nav_desc">Check GitHub for a newer build and install it</string>
+    <string name="update_ready">Downloaded and verified. Ready to install.</string>
+    <string name="update_startup_body">Version %1$s is available. tvaVPN will download and install it.</string>
+    <string name="update_startup_button">Update</string>
+    <string name="update_startup_downloading">Downloading the update… %1$d%%</string>
+    <string name="update_startup_error">Could not install the update: %1$s</string>
+    <string name="update_startup_hash_warning">Warning: the downloaded file\'s checksum does not match the one published with this release. Install anyway, or try again later.</string>
+    <string name="update_startup_install_anyway">Install anyway</string>
+    <string name="update_startup_installing">Download verified. Opening the installer…</string>
+    <string name="update_startup_not_now">Not now</string>
+    <string name="update_startup_retry">Try again</string>
+    <string name="update_startup_title">Update available</string>
+    <string name="update_title">Check for updates</string>
+    <string name="update_up_to_date">You already have the latest version.</string>
+    <string name="update_view_release">View release notes</string>
+    <string name="upstream_help">Dials out through a proxy already running on this phone. socks5://host:port carries every protocol; http://host:port only carries MASQUE over HTTP/2, which is switched on for you. Credentials may be included as user:pass@host:port and are passed to the engine privately, never on its command line. Leave empty to connect directly.</string>
+    <string name="upstream_hint">socks5://127.0.0.1:1080</string>
+    <string name="upstream_label">Upstream proxy</string>
+    <string name="validate_secs_label">Validate seconds (0 = default)</string>
+    <string name="widget_desc">Connect or disconnect tvaVPN with one tap</string>
+    <string name="widget_toggle_desc">Toggle connection</string>
+    <string name="zt_cancel">Cancel</string>
+    <string name="zt_checking">Checking this device\'s membership…</string>
+    <string name="zt_code_body">Your organization e-mailed a one-time code to %1$s. Type it here to finish joining.</string>
+    <string name="zt_code_body_noaddr">Your organization e-mailed you a one-time code. Type it here to finish joining.</string>
+    <string name="zt_code_dismiss">Not now</string>
+    <string name="zt_code_label">Login code</string>
+    <string name="zt_code_retry">That code was not accepted. Attempt %1$d of %2$d.</string>
+    <string name="zt_code_send">Send code</string>
+    <string name="zt_code_title">Enter your login code</string>
+    <string name="zt_disconnect_first">Disconnect to sign in or to change the membership.</string>
+    <string name="zt_dlg_close">Close</string>
+    <string name="zt_dlg_code_body">A one-time code was e-mailed to %1$s. Type it here to sign in.</string>
+    <string name="zt_dlg_confirm">Sign in</string>
+    <string name="zt_dlg_exhausted">That code was not accepted either. Ask for a new code and try again.</string>
+    <string name="zt_dlg_rejected">That code was not accepted. Attempt %1$d of %2$d.</string>
+    <string name="zt_dlg_resend">Send a new code</string>
+    <string name="zt_dlg_resending">Asking for a new code…</string>
+    <string name="zt_dlg_resent">A new code is on its way. Only the newest code works.</string>
+    <string name="zt_dlg_retry">Try again</string>
+    <string name="zt_dlg_sending">Asking your organization to e-mail a code to %1$s…</string>
+    <string name="zt_dlg_title">Sign in to %1$s</string>
+    <string name="zt_dlg_verifying">Checking the code…</string>
+    <string name="zt_enrolled">This device is already a member of %1$s. Connecting needs no sign-in.</string>
+    <string name="zt_err_email">That e-mail address is not complete.</string>
+    <string name="zt_err_expired_on_arrival">Cloudflare issued a token that is already expired. Check that the phone\'s date and time are correct, then sign in again.</string>
+    <string name="zt_err_network">Could not reach %1$s (%2$s). Check the connection and try again. If Cloudflare is only reachable through your upstream proxy, skip signing in here: the code asked for while connecting goes through that proxy.</string>
+    <string name="zt_err_no_nonce">The code was sent, but Cloudflare\'s answer lacked what the sign-in needs. Try again; if it keeps happening, the sign-in page has changed.</string>
+    <string name="zt_err_no_otp">This organization does not offer sign-in with an e-mailed code. Ask its administrator, or use a service token or an enrolment token instead.</string>
+    <string name="zt_err_refused">Cloudflare refused the request (HTTP %1$d). Check the team name, and that this address is allowed to join.</string>
+    <string name="zt_err_store">Signed in, but this phone could not store the result securely, so nothing was saved.</string>
+    <string name="zt_err_team">That team name is not valid. Use just the name, for example acme.</string>
+    <string name="zt_forget">Remove this device\'s membership</string>
+    <string name="zt_forget_body">This phone\'s saved identity in %1$s is deleted, and the next connect joins the organization again as a new device. Personal WARP and other teams are not touched. This cannot be undone.</string>
+    <string name="zt_forget_busy">Disconnect first: the running tunnel is using this membership.</string>
+    <string name="zt_forget_desc">Deletes the saved membership for this team only. The next connect joins again. Use it after your organization removed this device, or to join as someone else.</string>
+    <string name="zt_forget_done">Membership removed. The next connect joins again.</string>
+    <string name="zt_forget_ok">Remove</string>
+    <string name="zt_forget_title">Remove the membership?</string>
+    <string name="zt_need_team">Enter the team name above to sign in or to see whether this device is already a member.</string>
+    <string name="zt_service_pending">Not a member yet. The next connect joins with the service token above, without you.</string>
+    <string name="zt_signed_in">Signed in. Connect now to join the organization.</string>
+    <string name="zt_signed_out">Sign-in forgotten.</string>
+    <string name="zt_signin">Sign in</string>
+    <string name="zt_signin_again">Sign in again</string>
+    <string name="zt_signin_desc">Your organization e-mails a one-time code to the address above, you type it here, and the result is kept encrypted on this phone for the next connect.</string>
+    <string name="zt_signin_expired">Your sign-in has expired. Sign in again before connecting, or the code is asked for while connecting.</string>
+    <string name="zt_signin_left_nodate">The sign-in carries no expiry date.</string>
+    <string name="zt_signin_left_soon">The sign-in expires in under a minute.</string>
+    <string name="zt_signin_need_email">Enter your work e-mail above first.</string>
+    <string name="zt_signin_none">Not signed in yet. Sign in now and the connect will not stop to ask for a code. If you skip this, the code is asked for while connecting.</string>
+    <string name="zt_signin_other">The saved sign-in is for %1$s in team %2$s, not the address and team above. It will not be used: sign in again.</string>
+    <string name="zt_signin_ready">Signed in as %1$s. The next connect joins this device without asking for a code.</string>
+    <string name="zt_signout">Forget this sign-in</string>
+    <string name="zt_signout_desc">Deletes the saved sign-in from this phone. A membership this device already has is not affected.</string>
+    <string name="zt_svc_need_both">Enter both the client ID and the client secret first.</string>
+    <string name="zt_svc_no_token">Not accepted (HTTP %1$d). Check the client ID and secret, and that the service token is allowed to enrol devices (Service Auth).</string>
+    <string name="zt_svc_ok">Accepted: the organization issued an enrolment token for this service token.</string>
+    <string name="zt_svc_test">Test the service token</string>
+    <string name="zt_svc_test_desc">Asks your organization for an enrolment token exactly as the engine will when connecting. Nothing is stored.</string>
+    <string name="zt_svc_testing">Testing…</string>
+    <string name="zt_token_pending">Not a member yet. The next connect joins with the enrolment token above.</string>
+    <string name="zxing_app_name">Barcode Scanner</string>
+    <string name="zxing_button_ok">OK</string>
+    <string name="zxing_msg_camera_framework_bug">Sorry, the Android camera encountered a problem. You may need to restart the device.</string>
+    <string name="zxing_msg_default_status">Place a barcode inside the viewfinder rectangle to scan it.</string>
+    <style name="DialogWindowTheme">
+        <item name="android:windowClipToOutline">false</item>
+    </style>
+    <style name="EdgeToEdgeFloatingDialogTheme" parent="android:Theme.DeviceDefault.Dialog">
+        <item name="android:windowLayoutInDisplayCutoutMode" ns1:targetApi="27">@integer/m3c_window_layout_in_display_cutout_mode</item>
+        <item name="android:windowClipToOutline">false</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowElevation">0dp</item>
+    </style>
+    <style name="EdgeToEdgeFloatingDialogWindowTheme">
+        <item name="android:dialogTheme">@style/EdgeToEdgeFloatingDialogTheme</item>
+    </style>
+    <style name="FloatingDialogTheme">
+        <item name="android:windowIsFloating">false</item>
+    </style>
+    <style name="FloatingDialogWindowTheme">
+        <item name="android:windowClipToOutline">false</item>
+        <item name="android:dialogTheme">@style/FloatingDialogTheme</item>
+    </style>
+    <style name="TextAppearance.Compat.Notification" parent="@android:style/TextAppearance.StatusBar.EventContent"/>
+    <style name="TextAppearance.Compat.Notification.Info">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+    <style name="TextAppearance.Compat.Notification.Line2" parent="TextAppearance.Compat.Notification.Info"/>
+    <style name="TextAppearance.Compat.Notification.Time">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+    <style name="TextAppearance.Compat.Notification.Title" parent="@android:style/TextAppearance.StatusBar.EventContent.Title"/>
+    <style name="Theme.AetherMobile" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/aether_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        
+    </style>
+    <style name="Widget.Compat.NotificationActionContainer" parent=""/>
+    <style name="Widget.Compat.NotificationActionText" parent=""/>
+    <style name="zxing_CaptureTheme" parent="android:Theme.Holo.NoActionBar.Fullscreen">
+  </style>
+    <declare-styleable name="Capability">
+        
+        <attr format="reference" name="queryPatterns"/>
+        
+        <attr format="boolean" name="shortcutMatchRequired"/>
+    </declare-styleable>
+    <declare-styleable name="ColorStateListItem">
+        
+        <attr name="android:color"/>
+        
+        <attr format="float" name="alpha"/>
+        <attr name="android:alpha"/>
+        
+        <attr format="float" name="lStar"/>
+        <attr name="android:lStar"/>
+    </declare-styleable>
+    <declare-styleable name="FontFamily">
+        
+        <attr format="string" name="fontProviderAuthority"/>
+        
+        <attr format="string" name="fontProviderPackage"/>
+        
+        <attr format="string" name="fontProviderQuery"/>
+        
+        <attr format="string" name="fontProviderFallbackQuery"/>
+        
+        <attr format="reference" name="fontProviderCerts"/>
+        
+        <attr name="fontProviderFetchStrategy">
+            <!-- The blocking font fetch works as follows.
+              First, check the local cache, then if the requested font is not cached, request the
+              font from the provider and wait until it is finished.  You can change the length of
+              the timeout by modifying fontProviderFetchTimeout.  If the timeout happens, the
+              default typeface will be used instead. -->
+            <enum name="blocking" value="0"/>
+            <!-- The async font fetch works as follows.
+              First, check the local cache, then if the requested font is not cached, trigger a
+              request the font and continue with layout inflation. Once the font fetch succeeds, the
+              target text view will be refreshed with the downloaded font data. The
+              fontProviderFetchTimeout will be ignored if async loading is specified. -->
+            <enum name="async" value="1"/>
+        </attr>
+        
+        <attr format="integer" name="fontProviderFetchTimeout">
+            <!-- A special value for the timeout. In this case, the blocking font fetching will not
+              timeout and wait until a reply is received from the font provider. -->
+            <enum name="forever" value="-1"/>
+        </attr>
+        
+        <attr format="string" name="fontProviderSystemFontFamily"/>
+    </declare-styleable>
+    <declare-styleable name="FontFamilyFont">
+        
+        <attr name="fontStyle">
+            <enum name="normal" value="0"/>
+            <enum name="italic" value="1"/>
+        </attr>
+        
+        <attr format="reference" name="font"/>
+        
+        <attr format="integer" name="fontWeight"/>
+        
+        <attr format="string" name="fontVariationSettings"/>
+        
+        <attr format="integer" name="ttcIndex"/>
+        
+        <attr name="android:fontStyle"/>
+        <attr name="android:font"/>
+        <attr name="android:fontWeight"/>
+        <attr name="android:fontVariationSettings"/>
+        <attr name="android:ttcIndex"/>
+    </declare-styleable>
+    <declare-styleable name="GradientColor">
+        
+        <attr name="android:startColor"/>
+        
+        <attr name="android:centerColor"/>
+        
+        <attr name="android:endColor"/>
+        
+        <attr name="android:type"/>
+
+        
+        
+        <attr name="android:gradientRadius"/>
+
+        
+        
+        <attr name="android:centerX"/>
+        
+        <attr name="android:centerY"/>
+
+        
+        
+        <attr name="android:startX"/>
+        
+        <attr name="android:startY"/>
+        
+        <attr name="android:endX"/>
+        
+        <attr name="android:endY"/>
+
+        
+        <attr name="android:tileMode"/>
+    </declare-styleable>
+    <declare-styleable name="GradientColorItem">
+        
+        <attr name="android:offset"/>
+        
+        <attr name="android:color"/>
+    </declare-styleable>
+    <declare-styleable name="zxing_camera_preview">
+    <attr format="dimension" name="zxing_framing_rect_width"/>
+    <attr format="dimension" name="zxing_framing_rect_height"/>
+    <attr format="boolean" name="zxing_use_texture_view"/>
+    <attr format="enum" name="zxing_preview_scaling_strategy">
+      <enum name="centerCrop" value="1"/>
+      <enum name="fitCenter" value="2"/>
+      <enum name="fitXY" value="3"/>
+    </attr>
+  </declare-styleable>
+    <declare-styleable name="zxing_finder">
+    <attr format="color" name="zxing_possible_result_points"/>
+    <attr format="color" name="zxing_result_view"/>
+    <attr format="color" name="zxing_viewfinder_laser"/>
+    <attr format="color" name="zxing_viewfinder_mask"/>
+    <attr format="boolean" name="zxing_viewfinder_laser_visibility"/>
+  </declare-styleable>
+    <declare-styleable name="zxing_view">
+    <attr format="reference" name="zxing_scanner_layout"/>
+  </declare-styleable>
+</resources>

@@ -1,0 +1,829 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="app.tvavpn.android"
+4    android:versionCode="28003"
+5    android:versionName="1.8.2" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:5:5-67
+11-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:5:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:6:5-79
+12-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:6:22-76
+13    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+13-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:7:5-77
+13-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:7:22-74
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+14-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:8:5-89
+14-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:8:22-86
+15    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+15-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:9:5-77
+15-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:9:22-74
+16    <!--
+17         1.5.0 custom configs: scanning a config QR code. Asked for only when the
+18         user taps "Scan a QR code"; the camera is optional hardware.
+19    -->
+20    <uses-permission android:name="android.permission.CAMERA" />
+20-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:12:5-65
+20-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:12:22-62
+21
+22    <uses-feature
+22-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:13:5-85
+23        android:name="android.hardware.camera"
+23-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:13:19-57
+24        android:required="false" />
+24-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:13:58-82
+25    <uses-feature
+25-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:14:5-89
+26        android:name="android.hardware.camera.any"
+26-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:14:19-61
+27        android:required="false" />
+27-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:14:62-86
+28    <!--
+29      RE-ADDED on request, for the in-app "Check for updates" page
+30      (UpdatePage.kt / UpdateChecker.kt). 1.2.2 removed this permission as the
+31      single most over-privileged thing the app could do; re-adding it was not
+32      done casually, and the old code-delivery path was not simply restored:
+33
+34        - the download only ever comes from the project's own GitHub Releases
+35          API/CDN over HTTPS;
+36        - the file is verified (package name + signing certificate must match
+37          the app already installed) BEFORE it is handed to the installer, and
+38          deleted immediately on any mismatch - see UpdateChecker for the
+39          exact check;
+40        - the file lives only in the app's cache dir and is deleted on the
+41          next process start unconditionally, which covers both failure and
+42          the success path (an in-place update kills this process);
+43        - the OS's own "Install app" confirmation is never skipped - nothing
+44          declaring this permission CAN skip it, by platform design.
+45
+46      IMPORTANT, read together with SignerIdentity.kt's F-1 note: the
+47      signature check above does not protect against a release signed with
+48      the project's OWN key by someone other than the intended maintainer,
+49      because the signing keystore is committed to the repository
+50      (.github/ci-keystore.jks.b64) and that finding is still open. An
+51      automated updater is only as trustworthy as that repository and its
+52      release pipeline. Rotating the signing key out of the repo closes that
+53      gap; this permission re-add does not, and was not meant to.
+54    -->
+55    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+55-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:42:5-83
+55-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:42:22-80
+56
+57    <!--
+58         Split tunneling needs to list the device's launchable apps so the user
+59         can pick which apps to include/exclude from the tunnel. We only query
+60         launcher-visible apps (not QUERY_ALL_PACKAGES), which keeps Play policy
+61         happy and avoids the sensitive all-packages permission.
+62    -->
+63    <!--
+64      ANDROID TV (1.3.1, issue #21).
+65
+66      A VPN app is exactly what a TV needs and nothing here was stopping it from
+67      working - it was stopping it from being INSTALLABLE and FINDABLE. Two things
+68      were missing:
+69
+70        * A TV has no touchscreen. Android treats android.hardware.touchscreen as
+71          implicitly REQUIRED, so Google Play and the TV launcher filtered this app
+72          out of a TV entirely. Declaring it not required is what makes the APK
+73          eligible at all.
+74        * A TV launcher only shows activities in the LEANBACK_LAUNCHER category,
+75          which is added to MainActivity below along with a banner.
+76
+77      android.software.leanback is declared NOT required on purpose: the same APK
+78      must keep installing on phones, which do not have it. This is a
+79      compatibility declaration, not a separate TV build - the Compose UI is
+80      unchanged and remains touch-shaped. D-pad focus traversal has NOT been
+81      designed for, and that is the honest limit of what 1.3.1 does here.
+82    -->
+83    <uses-feature
+83-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:68:5-70:36
+84        android:name="android.hardware.touchscreen"
+84-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:69:9-52
+85        android:required="false" />
+85-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:70:9-33
+86    <uses-feature
+86-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:71:5-73:36
+87        android:name="android.software.leanback"
+87-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:72:9-49
+88        android:required="false" />
+88-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:73:9-33
+89
+90    <queries>
+90-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:75:5-80:15
+91        <intent>
+91-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:76:9-79:18
+92            <action android:name="android.intent.action.MAIN" />
+92-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:77:13-65
+92-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:77:21-62
+93
+94            <category android:name="android.intent.category.LAUNCHER" />
+94-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:78:13-73
+94-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:78:23-70
+95        </intent>
+96    </queries>
+97
+98    <permission
+98-->[androidx.core:core:1.15.0] C:\Users\tohid\.gradle\caches\8.9\transforms\5b266e964a5ecceaeb29d258206a0758\transformed\core-1.15.0\AndroidManifest.xml:22:5-24:47
+99        android:name="app.tvavpn.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+99-->[androidx.core:core:1.15.0] C:\Users\tohid\.gradle\caches\8.9\transforms\5b266e964a5ecceaeb29d258206a0758\transformed\core-1.15.0\AndroidManifest.xml:23:9-81
+100        android:protectionLevel="signature" />
+100-->[androidx.core:core:1.15.0] C:\Users\tohid\.gradle\caches\8.9\transforms\5b266e964a5ecceaeb29d258206a0758\transformed\core-1.15.0\AndroidManifest.xml:24:9-44
+101
+102    <uses-permission android:name="app.tvavpn.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+102-->[androidx.core:core:1.15.0] C:\Users\tohid\.gradle\caches\8.9\transforms\5b266e964a5ecceaeb29d258206a0758\transformed\core-1.15.0\AndroidManifest.xml:26:5-97
+102-->[androidx.core:core:1.15.0] C:\Users\tohid\.gradle\caches\8.9\transforms\5b266e964a5ecceaeb29d258206a0758\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
+103
+104    <uses-feature
+104-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:28:5-30:36
+105        android:name="android.hardware.camera.front"
+105-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:29:9-53
+106        android:required="false" /> <!-- TODO replace above two with next line after Android 4.2 -->
+106-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:30:9-33
+107    <!-- <uses-feature android:name="android.hardware.camera.any"/> -->
+108    <uses-feature
+108-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:33:5-35:36
+109        android:name="android.hardware.camera.autofocus"
+109-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:34:9-57
+110        android:required="false" />
+110-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:35:9-33
+111    <uses-feature
+111-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:36:5-38:36
+112        android:name="android.hardware.camera.flash"
+112-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:37:9-53
+113        android:required="false" />
+113-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:38:9-33
+114    <uses-feature
+114-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:39:5-41:36
+115        android:name="android.hardware.screen.landscape"
+115-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:40:9-57
+116        android:required="false" />
+116-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:41:9-33
+117    <uses-feature
+117-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:42:5-44:36
+118        android:name="android.hardware.wifi"
+118-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:43:9-45
+119        android:required="false" />
+119-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:44:9-33
+120
+121    <application
+121-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:82:5-389:19
+122        android:name="studio.cluvex.aether.AetherApp"
+122-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:83:9-34
+123        android:allowBackup="false"
+123-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:84:9-36
+124        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+124-->[androidx.core:core:1.15.0] C:\Users\tohid\.gradle\caches\8.9\transforms\5b266e964a5ecceaeb29d258206a0758\transformed\core-1.15.0\AndroidManifest.xml:28:18-86
+125        android:banner="@drawable/tv_banner"
+125-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:92:9-45
+126        android:dataExtractionRules="@xml/data_extraction_rules"
+126-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:86:9-65
+127        android:debuggable="true"
+128        android:extractNativeLibs="true"
+129        android:fullBackupContent="@xml/backup_rules"
+129-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:85:9-54
+130        android:icon="@mipmap/ic_launcher"
+130-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:89:9-43
+131        android:label="@string/app_name"
+131-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:90:9-41
+132        android:networkSecurityConfig="@xml/network_security_config"
+132-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:87:9-69
+133        android:roundIcon="@mipmap/ic_launcher_round"
+133-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:91:9-54
+134        android:supportsRtl="true"
+134-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:93:9-35
+135        android:theme="@style/Theme.AetherMobile"
+135-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:94:9-50
+136        android:usesCleartextTraffic="false" >
+136-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:88:9-45
+137        <activity
+137-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:97:9-302:20
+138            android:name="studio.cluvex.aether.MainActivity"
+138-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:98:13-41
+139            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density"
+139-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:101:13-102
+140            android:exported="true"
+140-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:99:13-36
+141            android:launchMode="singleTask"
+141-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:100:13-44
+142            android:theme="@style/Theme.AetherMobile"
+142-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:102:13-54
+143            android:windowSoftInputMode="adjustResize" >
+143-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:103:13-55
+144            <intent-filter>
+144-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:104:13-110:29
+145                <action android:name="android.intent.action.MAIN" />
+145-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:77:13-65
+145-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:77:21-62
+146
+147                <category android:name="android.intent.category.LAUNCHER" />
+147-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:78:13-73
+147-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:78:23-70
+148                <!--
+149                     Issue #21: without this category a TV launcher never lists the
+150                     app, however well it would otherwise run.
+151                -->
+152                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+152-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:109:17-86
+152-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:109:27-83
+153            </intent-filter>
+154
+155            <!--
+156              EXTERNAL IMPORT (tvaVPN): makes the app a candidate in the system's
+157              "Open with" / "Share" chooser for every config format ConfigParser
+158              understands (see ConfigParser's header comment), instead of the app
+159              only ever receiving a config by copy/paste or camera.
+160
+161              launchMode="singleTask" above is load-bearing here: without it,
+162              tapping several links in a row (or Share -> tvaVPN twice) stacks a
+163              new MainActivity - with its own TAMPER BLOCK / profile-load work in
+164              onCreate - on top of the running one each time, instead of routing
+165              into the existing instance through onNewIntent.
+166
+167              MainActivity.handleIncomingIntent() turns whatever arrives here into
+168              an ImportIntentBus.Payload; CustomConfigsPage is the only thing that
+169              actually imports it, so this reuses the exact same ConfigImporter /
+170              ConfigParser path a manual paste or file pick already goes through.
+171            -->
+172
+173
+174            <!--
+175                 1) A share link tapped anywhere (a browser, Telegram, a file
+176                 manager's link, ...): the link itself IS the config, so no file
+177                 I/O is involved - see ConfigParser.LINK_SCHEMES, minus the
+178                 generic socks/wireguard schemes other apps also claim.
+179            -->
+180            <intent-filter>
+180-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:134:13-148:29
+181                <action android:name="android.intent.action.VIEW" />
+181-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:17-69
+181-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:25-66
+182
+183                <category android:name="android.intent.category.DEFAULT" />
+183-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:17-76
+183-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:27-73
+184                <category android:name="android.intent.category.BROWSABLE" />
+184-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:137:17-78
+184-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:137:27-75
+185
+186                <data android:scheme="vmess" />
+186-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+186-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+187                <data android:scheme="vless" />
+187-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+187-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+188                <data android:scheme="trojan" />
+188-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+188-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+189                <data android:scheme="ss" />
+189-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+189-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+190                <data android:scheme="hysteria2" />
+190-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+190-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+191                <data android:scheme="hy2" />
+191-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+191-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+192                <data android:scheme="hysteria" />
+192-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+192-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+193                <data android:scheme="hy" />
+193-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+193-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+194                <data android:scheme="npvt" />
+194-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+194-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+195                <data android:scheme="npvs" />
+195-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+195-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+196            </intent-filter>
+197
+198            <!--
+199                 2) A config file opened from a file manager with a MIME type the
+200                 system actually knows - Xray/V2Ray JSON, or a bare-JSON npvt.
+201            -->
+202            <intent-filter>
+202-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:152:13-157:29
+203                <action android:name="android.intent.action.VIEW" />
+203-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:17-69
+203-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:25-66
+204
+205                <category android:name="android.intent.category.DEFAULT" />
+205-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:17-76
+205-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:27-73
+206
+207                <data
+207-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+208                    android:mimeType="application/json"
+208-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+209                    android:scheme="content" />
+209-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+210                <data
+210-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+211                    android:mimeType="application/json"
+211-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+212                    android:scheme="file" />
+212-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+213            </intent-filter>
+214
+215            <!--
+216                 3) A `.npvt` or `.npvs` file (a single server vs. a NapsternetV
+217                 subscription bundle - same NPVT1/NPVTSUB1 container, see
+218                 NpvtCodec). Android has no registered MIME type for either
+219                 extension, so most file managers hand them over as
+220                 application/octet-stream or leave the type empty - matching by
+221                 mimeType alone would miss it. mimeType="*/*" + pathPattern is the
+222                 standard workaround for a custom, unregistered extension.
+223
+224                 BUG FIX (tvaVPN): android:pathPattern is NOT a real regex - it's
+225                 Android's limited "simple glob" matcher, where "." means "any one
+226                 character" and a following "*" means "repeat the preceding
+227                 character 0+ times". A single ".*\\.npvt" pattern only reliably
+228                 matches a path with ONE dot before the extension; a file name
+229                 with more than one dot ("my config v1.2.npvt", or a duplicate
+230                 download renamed "config (1).2.npvt") falls through and the app
+231                 silently drops out of the chooser for that specific file - this
+232                 is a long-documented AOSP PatternMatcher limitation, not
+233                 something fixable by changing the pattern's "syntax". The
+234                 standard workaround, used below, is repeating the pattern with
+235                 an extra ".*\\." for each additional dot we want to tolerate.
+236            -->
+237            <intent-filter>
+237-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:179:13-202:29
+238                <action android:name="android.intent.action.VIEW" />
+238-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:17-69
+238-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:25-66
+239
+240                <category android:name="android.intent.category.DEFAULT" />
+240-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:17-76
+240-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:27-73
+241
+242                <data
+242-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+243                    android:host="*"
+243-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+244                    android:mimeType="*/*"
+244-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+245                    android:pathPattern=".*\\.npvt"
+245-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+246                    android:scheme="content" />
+246-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+247                <data
+247-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+248                    android:host="*"
+248-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+249                    android:mimeType="*/*"
+249-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+250                    android:pathPattern=".*\\..*\\.npvt"
+250-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+251                    android:scheme="content" />
+251-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+252                <data
+252-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+253                    android:host="*"
+253-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+254                    android:mimeType="*/*"
+254-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+255                    android:pathPattern=".*\\..*\\..*\\.npvt"
+255-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+256                    android:scheme="content" />
+256-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+257                <data
+257-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+258                    android:host="*"
+258-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+259                    android:mimeType="*/*"
+259-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+260                    android:pathPattern=".*\\..*\\..*\\..*\\.npvt"
+260-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+261                    android:scheme="content" />
+261-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+262            </intent-filter>
+263            <intent-filter>
+263-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:203:13-226:29
+264                <action android:name="android.intent.action.VIEW" />
+264-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:17-69
+264-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:25-66
+265
+266                <category android:name="android.intent.category.DEFAULT" />
+266-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:17-76
+266-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:27-73
+267
+268                <data
+268-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+269                    android:host="*"
+269-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+270                    android:mimeType="*/*"
+270-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+271                    android:pathPattern=".*\\.npvs"
+271-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+272                    android:scheme="content" />
+272-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+273                <data
+273-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+274                    android:host="*"
+274-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+275                    android:mimeType="*/*"
+275-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+276                    android:pathPattern=".*\\..*\\.npvs"
+276-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+277                    android:scheme="content" />
+277-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+278                <data
+278-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+279                    android:host="*"
+279-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+280                    android:mimeType="*/*"
+280-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+281                    android:pathPattern=".*\\..*\\..*\\.npvs"
+281-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+282                    android:scheme="content" />
+282-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+283                <data
+283-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+284                    android:host="*"
+284-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+285                    android:mimeType="*/*"
+285-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+286                    android:pathPattern=".*\\..*\\..*\\..*\\.npvs"
+286-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+287                    android:scheme="content" />
+287-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+288            </intent-filter>
+289            <intent-filter>
+289-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:227:13-250:29
+290                <action android:name="android.intent.action.VIEW" />
+290-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:17-69
+290-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:25-66
+291
+292                <category android:name="android.intent.category.DEFAULT" />
+292-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:17-76
+292-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:27-73
+293
+294                <data
+294-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+295                    android:host="*"
+295-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+296                    android:mimeType="*/*"
+296-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+297                    android:pathPattern=".*\\.npvt"
+297-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+298                    android:scheme="file" />
+298-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+299                <data
+299-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+300                    android:host="*"
+300-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+301                    android:mimeType="*/*"
+301-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+302                    android:pathPattern=".*\\..*\\.npvt"
+302-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+303                    android:scheme="file" />
+303-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+304                <data
+304-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+305                    android:host="*"
+305-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+306                    android:mimeType="*/*"
+306-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+307                    android:pathPattern=".*\\..*\\..*\\.npvt"
+307-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+308                    android:scheme="file" />
+308-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+309                <data
+309-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+310                    android:host="*"
+310-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+311                    android:mimeType="*/*"
+311-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+312                    android:pathPattern=".*\\..*\\..*\\..*\\.npvt"
+312-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+313                    android:scheme="file" />
+313-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+314            </intent-filter>
+315            <intent-filter>
+315-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:251:13-274:29
+316                <action android:name="android.intent.action.VIEW" />
+316-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:17-69
+316-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:135:25-66
+317
+318                <category android:name="android.intent.category.DEFAULT" />
+318-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:17-76
+318-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:27-73
+319
+320                <data
+320-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+321                    android:host="*"
+321-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+322                    android:mimeType="*/*"
+322-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+323                    android:pathPattern=".*\\.npvs"
+323-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+324                    android:scheme="file" />
+324-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+325                <data
+325-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+326                    android:host="*"
+326-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+327                    android:mimeType="*/*"
+327-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+328                    android:pathPattern=".*\\..*\\.npvs"
+328-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+329                    android:scheme="file" />
+329-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+330                <data
+330-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+331                    android:host="*"
+331-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+332                    android:mimeType="*/*"
+332-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+333                    android:pathPattern=".*\\..*\\..*\\.npvs"
+333-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+334                    android:scheme="file" />
+334-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+335                <data
+335-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+336                    android:host="*"
+336-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:184:21-37
+337                    android:mimeType="*/*"
+337-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+338                    android:pathPattern=".*\\..*\\..*\\..*\\.npvs"
+338-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:186:21-52
+339                    android:scheme="file" />
+339-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:23-45
+340            </intent-filter>
+341
+342            <!--
+343                 4) Shared INTO the app from somewhere else (Share sheet): a
+344                 pasted/forwarded config as text, a config file as JSON, or a
+345                 screenshot/photo of a QR code - ConfigImporter.fromImage already
+346                 decodes those, this just gives it a way in besides the in-app
+347                 picker.
+348
+349                 BUG FIX (tvaVPN): this list had no entry at all for `.npvt` /
+350                 `.npvs` files. ACTION_VIEW (tapping a file in a file manager)
+351                 was covered above, but ACTION_SEND (using that file's own
+352                 "Share" button in Telegram, Drive, a file manager, ...) was not -
+353                 the sending app reports an unrecognised extension as
+354                 "application/octet-stream" (the standard fallback for any file
+355                 type Android has no registered MIME type for), and since that
+356                 exact type was never declared here, tvaVPN never appeared in the
+357                 share sheet for its own config files, only for plain text/JSON/
+358                 images. octet-stream is intentionally narrow (not "*/*"): a
+359                 wildcard here would put tvaVPN in the share sheet for every
+360                 file of any kind, including ones it can't do anything with.
+361            -->
+362            <intent-filter>
+362-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:294:13-301:29
+363                <action android:name="android.intent.action.SEND" />
+363-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:295:17-69
+363-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:295:25-66
+364
+365                <category android:name="android.intent.category.DEFAULT" />
+365-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:17-76
+365-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:136:27-73
+366
+367                <data android:mimeType="text/plain" />
+367-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+367-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+368                <data android:mimeType="application/json" />
+368-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+368-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+369                <data android:mimeType="image/*" />
+369-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+369-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+370                <data android:mimeType="application/octet-stream" />
+370-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:138:17-48
+370-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:155:48-83
+371            </intent-filter>
+372        </activity>
+373
+374        <service
+374-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:304:9-316:19
+375            android:name="studio.cluvex.aether.vpn.AetherVpnService"
+375-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:305:13-49
+376            android:exported="false"
+376-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:306:13-37
+377            android:foregroundServiceType="specialUse"
+377-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:309:13-55
+378            android:permission="android.permission.BIND_VPN_SERVICE"
+378-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:307:13-69
+379            android:stopWithTask="false" >
+379-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:308:13-41
+380            <intent-filter>
+380-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:310:13-312:29
+381                <action android:name="android.net.VpnService" />
+381-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:311:17-65
+381-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:311:25-62
+382            </intent-filter>
+383
+384            <property
+384-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:313:13-315:100
+385                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+385-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:314:17-76
+386                android:value="Runs the tvaVPN censorship-circumvention VPN tunnel while active" />
+386-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:315:17-97
+387        </service>
+388
+389        <!-- Quick Settings tile: one-tap connect/disconnect from the shade. -->
+390        <service
+390-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:319:9-328:19
+391            android:name="studio.cluvex.aether.vpn.AetherTileService"
+391-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:320:13-50
+392            android:exported="true"
+392-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:321:13-36
+393            android:icon="@drawable/ic_notification"
+393-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:322:13-53
+394            android:label="@string/qs_tile_label"
+394-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:323:13-50
+395            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE" >
+395-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:324:13-77
+396            <intent-filter>
+396-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:325:13-327:29
+397                <action android:name="android.service.quicksettings.action.QS_TILE" />
+397-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:326:17-87
+397-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:326:25-84
+398            </intent-filter>
+399        </service>
+400
+401        <!--
+402          Home-screen widget (feature merge): one-tap connect /
+403          disconnect plus live status on the launcher. Not exported; only the
+404          system AppWidgetService delivers updates to it, and our toggle
+405          broadcast is sent with an explicit component, so no other app can
+406          trigger it. updatePeriodMillis=0 — repaints are pushed from the VPN
+407          service's state-change hook, never on a timer.
+408        -->
+409        <receiver
+409-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:338:9-348:20
+410            android:name="studio.cluvex.aether.widget.AetherWidgetProvider"
+410-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:339:13-56
+411            android:exported="false"
+411-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:340:13-37
+412            android:label="@string/app_name" >
+412-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:341:13-45
+413            <intent-filter>
+413-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:342:13-344:29
+414                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+414-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:343:17-84
+414-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:343:25-81
+415            </intent-filter>
+416
+417            <meta-data
+417-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:345:13-347:62
+418                android:name="android.appwidget.provider"
+418-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:346:17-58
+419                android:resource="@xml/aether_widget_info" />
+419-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:347:17-59
+420        </receiver>
+421
+422        <!--
+423          Crash report screen (feature merge): shows the fatal
+424          exception saved by AetherApp's crash handler on the previous run.
+425          Not exported; only MainActivity can open it.
+426        -->
+427        <activity
+427-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:355:9-358:57
+428            android:name="studio.cluvex.aether.CrashReportActivity"
+428-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:356:13-48
+429            android:exported="false"
+429-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:357:13-37
+430            android:theme="@style/Theme.AetherMobile" />
+430-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:358:13-54
+431
+432        <!-- 1.5.0: the custom-config QR scanner, always portrait. -->
+433        <activity
+433-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:361:9-368:71
+434            android:name="studio.cluvex.aether.ui.settings.PortraitCaptureActivity"
+434-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:362:13-64
+435            android:exported="false"
+435-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:363:13-37
+436            android:screenOrientation="portrait"
+436-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:364:13-49
+437            android:stateNotNeeded="true"
+437-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:365:13-42
+438            android:theme="@style/zxing_CaptureTheme"
+438-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:366:13-54
+439            android:windowSoftInputMode="stateAlwaysHidden" />
+439-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:367:13-60
+440
+441        <!--
+442          RE-ADDED for UpdateChecker.install(): hands the downloaded, verified
+443          update APK (app-private cache only, see res/xml/file_paths.xml) to the
+444          system package installer as a content:// URI. exported="false" and
+445          grantUriPermissions="true": no other app can query this provider; a
+446          URI is only ever usable by the one app (the system installer) we
+447          explicitly grant it to, via FLAG_GRANT_READ_URI_PERMISSION on the
+448          single install Intent.
+449        -->
+450        <provider
+451            android:name="androidx.core.content.FileProvider"
+451-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:380:13-62
+452            android:authorities="app.tvavpn.android.fileprovider"
+452-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:381:13-64
+453            android:exported="false"
+453-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:382:13-37
+454            android:grantUriPermissions="true" >
+454-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:383:13-47
+455            <meta-data
+455-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:384:13-386:54
+456                android:name="android.support.FILE_PROVIDER_PATHS"
+456-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:385:17-67
+457                android:resource="@xml/file_paths" />
+457-->C:\Users\tohid\Documents\tvaVPN\app\src\main\AndroidManifest.xml:386:17-51
+458        </provider>
+459
+460        <activity
+460-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\tohid\.gradle\caches\8.9\transforms\a068e0390c7d4e8c9d8e3a294c3b8bdd\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+461            android:name="androidx.compose.ui.tooling.PreviewActivity"
+461-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\tohid\.gradle\caches\8.9\transforms\a068e0390c7d4e8c9d8e3a294c3b8bdd\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+462            android:exported="true" />
+462-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\tohid\.gradle\caches\8.9\transforms\a068e0390c7d4e8c9d8e3a294c3b8bdd\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+463
+464        <provider
+464-->[androidx.emoji2:emoji2:1.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\0bf9683449d25625e5bbe147e089bcb0\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+465            android:name="androidx.startup.InitializationProvider"
+465-->[androidx.emoji2:emoji2:1.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\0bf9683449d25625e5bbe147e089bcb0\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+466            android:authorities="app.tvavpn.android.androidx-startup"
+466-->[androidx.emoji2:emoji2:1.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\0bf9683449d25625e5bbe147e089bcb0\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+467            android:exported="false" >
+467-->[androidx.emoji2:emoji2:1.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\0bf9683449d25625e5bbe147e089bcb0\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+468            <meta-data
+468-->[androidx.emoji2:emoji2:1.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\0bf9683449d25625e5bbe147e089bcb0\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+469                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+469-->[androidx.emoji2:emoji2:1.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\0bf9683449d25625e5bbe147e089bcb0\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+470                android:value="androidx.startup" />
+470-->[androidx.emoji2:emoji2:1.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\0bf9683449d25625e5bbe147e089bcb0\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+471            <meta-data
+471-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\tohid\.gradle\caches\8.9\transforms\be6d9c90a625e285a04cfa9b7746043b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+472                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+472-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\tohid\.gradle\caches\8.9\transforms\be6d9c90a625e285a04cfa9b7746043b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+473                android:value="androidx.startup" />
+473-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\tohid\.gradle\caches\8.9\transforms\be6d9c90a625e285a04cfa9b7746043b\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+474            <meta-data
+474-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+475                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+475-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+476                android:value="androidx.startup" />
+476-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+477        </provider>
+478
+479        <receiver
+479-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+480            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+480-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+481            android:directBootAware="false"
+481-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+482            android:enabled="true"
+482-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+483            android:exported="true"
+483-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+484            android:permission="android.permission.DUMP" >
+484-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+485            <intent-filter>
+485-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+486                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+486-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+486-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+487            </intent-filter>
+488            <intent-filter>
+488-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+489                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+489-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+489-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+490            </intent-filter>
+491            <intent-filter>
+491-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+492                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+492-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+492-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+493            </intent-filter>
+494            <intent-filter>
+494-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+495                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+495-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+495-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\tohid\.gradle\caches\8.9\transforms\15dd328c82bad213991a96a5928ca9ca\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+496            </intent-filter>
+497        </receiver>
+498
+499        <activity
+499-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:47:9-53:63
+500            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+500-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:48:13-74
+501            android:clearTaskOnLaunch="true"
+501-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:49:13-45
+502            android:screenOrientation="sensorLandscape"
+502-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:50:13-56
+503            android:stateNotNeeded="true"
+503-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:51:13-42
+504            android:theme="@style/zxing_CaptureTheme"
+504-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:52:13-54
+505            android:windowSoftInputMode="stateAlwaysHidden" />
+505-->[com.journeyapps:zxing-android-embedded:4.3.0] C:\Users\tohid\.gradle\caches\8.9\transforms\59ba5bf58de2e60ec5345b3352b580c2\transformed\zxing-android-embedded-4.3.0\AndroidManifest.xml:53:13-60
+506    </application>
+507
+508</manifest>
