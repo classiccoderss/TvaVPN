@@ -138,6 +138,32 @@ class AetherVpnService : VpnService() {
      */
     private var stopJob: Job? = null
 
+    /**
+     * The `startId` of the MOST RECENT start request delivered to
+     * [onStartCommand], and the lock that makes the decision at the end of
+     * [stopEverything] atomic with it.
+     *
+     * ROOT CAUSE of "Apply and reconnect" closing the app (1.3.0-r2's fix was
+     * incomplete). The AI page disconnects, waits for [ConnectionState.Idle]
+     * and immediately connects again. Idle is published by the teardown
+     * coroutine BEFORE that coroutine drops the foreground notification and
+     * calls `stopSelf()`, so the new CONNECT request can land while the old
+     * teardown is still running -- and the teardown then stopped the service
+     * out from under a start request the framework was already tracking. That
+     * request's `onStartCommand` never ran (its service was gone), so nothing
+     * ever called `startForeground()` for it and the framework killed the
+     * process ~10 s later with
+     * RemoteServiceException$ForegroundServiceDidNotStartInTimeException.
+     *
+     * `stopSelf()` with no argument stops the service no matter how many newer
+     * start requests are pending; `stopSelf(startId)` only stops it when that
+     * request is still the newest. Teardown now uses the latter and does
+     * nothing at all when a newer request owns the service.
+     */
+    @Volatile
+    private var latestStartId: Int = 0
+    private val startIdLock = Any()
+
     /** Active userspace filter bridge (only when per-app blocking is on). */
     private var tunBridge: SocksTunBridge? = null
 
@@ -197,7 +223,11 @@ class AetherVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         live = this
-        studio.cluvex.aether.core.SmartLists.attach(applicationContext) // 1.4.0 smart routing
+        // Record which start request is the current owner BEFORE anything that
+        // can take time (see [latestStartId]): a teardown that is finishing
+        // must be able to tell that this request arrived and leave the service
+        // to it instead of stopping it.
+        synchronized(startIdLock) { latestStartId = startId }
         // FIRST STATEMENT, EVERY ACTION, NO EXCEPTIONS (1.3.0-r2 crash fix).
         //
         // ROOT CAUSE of "the app just closes" (ForegroundServiceDidNotStartInTime
@@ -233,6 +263,11 @@ class AetherVpnService : VpnService() {
         // next time they open the app instead of the app just vanishing.
         // ACTION_DISCONNECT is exempt because it is handled below and already stops
         // the service quickly either way, which cancels the same pending deadline.
+        // 1.4.0 smart routing is attached after the promotion, not before it: the
+        // framework's ten seconds are already running when this method is
+        // entered, so nothing that touches disk may run ahead of
+        // startForeground().
+        studio.cluvex.aether.core.SmartLists.attach(applicationContext)
         if (!foregroundOk && intent?.action != ACTION_DISCONNECT) {
             DiagnosticsLog.e(
                 TAG,
@@ -268,7 +303,7 @@ class AetherVpnService : VpnService() {
                 // rips away mid-crash.
                 val last = lastProfile
                 when {
-                    lockdownTunActive -> stopEverything()
+                    lockdownTunActive -> stopEverything(startId)
                     last != null && last.strictKillSwitch && foregroundOk -> enterLockdown(last)
                     else -> {
                         if (last != null && last.strictKillSwitch && !foregroundOk) {
@@ -278,7 +313,7 @@ class AetherVpnService : VpnService() {
                                     "post, so staying alive would only be killed later anyway.",
                             )
                         }
-                        stopEverything()
+                        stopEverything(startId)
                     }
                 }
                 return START_NOT_STICKY
@@ -2833,7 +2868,7 @@ class AetherVpnService : VpnService() {
         return file
     }
 
-    private fun stopEverything() {
+    private fun stopEverything(startId: Int = latestStartId) {
         RuntimeFlag.setWantConnected(applicationContext, false)
         AetherController.setState(ConnectionState.Disconnecting)
         updateNotification(getString(R.string.state_disconnecting))
@@ -2864,8 +2899,39 @@ class AetherVpnService : VpnService() {
             // Back to the documented ports for the next session: a relocation is a
             // fact about one session's environment, not a setting.
             PortLease.reset()
-            AetherController.setState(ConnectionState.Idle)
-            AetherTileService.requestUpdate(this@AetherVpnService)
+            // THE LAST STEP BELONGS TO THE REQUEST THAT ASKED FOR IT (see
+            // [latestStartId]). If a newer start request arrived while this
+            // teardown ran -- exactly what "Apply and reconnect" does: it waits
+            // for Idle, which is published a few lines above, and connects
+            // again -- then THAT request owns the service now. Stopping the
+            // foreground or the service here would swallow it: its
+            // onStartCommand would never run, so nothing would answer its
+            // startForegroundService() call and the framework would kill the
+            // whole process ten seconds later with
+            // ForegroundServiceDidNotStartInTimeException. The check and the
+            // stop are under the same lock onStartCommand takes, so the newer
+            // request can be neither missed nor half-seen; and even if it lands
+            // a microsecond later, `stopSelf(startId)` is a no-op for it because
+            // the system already knows a newer request is the last one.
+            val stillOurs = synchronized(startIdLock) {
+                if (latestStartId != startId) {
+                    false
+                } else {
+                    AetherController.setState(ConnectionState.Idle)
+                    AetherTileService.requestUpdate(this@AetherVpnService)
+                    stopForegroundCompat()
+                    stopSelf(startId)
+                    true
+                }
+            }
+            if (!stillOurs) {
+                DiagnosticsLog.i(
+                    TAG,
+                    "Teardown of start request $startId finished after a newer start request " +
+                        "($latestStartId) had already arrived - leaving the service, its " +
+                        "foreground notification and its state to that request.",
+                )
+            }
             // ISSUE #20 / #23 ROOT CAUSE (1.3.1): the widget was repainted ONLY
             // from updateNotification(), and this path does not call it - the
             // notification is about to be dropped, not updated. So the last thing
@@ -2874,8 +2940,6 @@ class AetherVpnService : VpnService() {
             // with widget it shows disconnecting .... always". The tile was
             // already refreshed on the line above; the widget was simply missed.
             AetherWidgetProvider.updateAllWidgets(this@AetherVpnService)
-            stopForegroundCompat()
-            stopSelf()
             job?.join()
         }
     }
