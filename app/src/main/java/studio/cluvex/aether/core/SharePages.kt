@@ -39,17 +39,17 @@ object SharePages {
         val filename: String? = null,
     )
 
-    const val PATH_WINDOWS = "/webrtc/aether-webrtc-lock.reg"
+    const val PATH_WINDOWS = "/webrtc/tvavpn-webrtc-lock.reg"
     const val PATH_FIREFOX = "/webrtc/policies.json"
-    const val PATH_MACOS = "/webrtc/aether-webrtc-lock-macos.sh"
-    const val PATH_LINUX = "/webrtc/aether-webrtc-lock-linux.sh"
+    const val PATH_MACOS = "/webrtc/tvavpn-webrtc-lock-macos.sh"
+    const val PATH_LINUX = "/webrtc/tvavpn-webrtc-lock-linux.sh"
 
     /** Routes the download paths; null for anything else. */
     fun download(path: String): Page? = when (path.lowercase()) {
-        PATH_WINDOWS -> Page("200 OK", "application/octet-stream", windowsReg(), "aether-webrtc-lock.reg")
+        PATH_WINDOWS -> Page("200 OK", "application/octet-stream", windowsReg(), "tvavpn-webrtc-lock.reg")
         PATH_FIREFOX -> Page("200 OK", "application/json; charset=utf-8", firefoxPolicies(), "policies.json")
-        PATH_MACOS -> Page("200 OK", "text/x-shellscript; charset=utf-8", macScript(), "aether-webrtc-lock-macos.sh")
-        PATH_LINUX -> Page("200 OK", "text/x-shellscript; charset=utf-8", linuxScript(), "aether-webrtc-lock-linux.sh")
+        PATH_MACOS -> Page("200 OK", "text/x-shellscript; charset=utf-8", macScript(), "tvavpn-webrtc-lock-macos.sh")
+        PATH_LINUX -> Page("200 OK", "text/x-shellscript; charset=utf-8", linuxScript(), "tvavpn-webrtc-lock-linux.sh")
         else -> null
     }
 
@@ -102,32 +102,32 @@ object SharePages {
 
     fun macScript(): String = """
         #!/bin/sh
-        # Aether VPN share - WebRTC lock for macOS (Chrome, Edge, Brave).
-        # Run:  sh aether-webrtc-lock-macos.sh   then quit and reopen the browser.
+        # tvaVPN share - WebRTC lock for macOS (Chrome, Edge, Brave).
+        # Run:  sh tvavpn-webrtc-lock-macos.sh   then quit and reopen the browser.
         defaults write com.google.Chrome WebRtcIPHandling -string $POLICY_VALUE
         defaults write com.microsoft.Edge WebRtcLocalhostIpHandling -string $POLICY_VALUE
         defaults write com.brave.Browser WebRtcIPHandling -string $POLICY_VALUE
-        echo "WebRTC lock applied. Restart the browser, then open http://aether.check/ to verify."
+        echo "WebRTC lock applied. Restart the browser, then open http://tvavpn.check/ to verify."
     """.trimIndent() + "\n"
 
     fun linuxScript(): String = """
         #!/bin/sh
-        # Aether VPN share - WebRTC lock for Linux (Chrome, Chromium, Brave, Edge).
-        # Run:  sudo sh aether-webrtc-lock-linux.sh   then restart the browser.
+        # tvaVPN share - WebRTC lock for Linux (Chrome, Chromium, Brave, Edge).
+        # Run:  sudo sh tvavpn-webrtc-lock-linux.sh   then restart the browser.
         set -e
         for d in /etc/opt/chrome/policies/managed /etc/chromium/policies/managed \
                  /etc/brave/policies/managed /etc/opt/edge/policies/managed; do
           mkdir -p "${'$'}d"
           printf '{ "WebRtcIPHandling": "$POLICY_VALUE", "WebRtcLocalhostIpHandling": "$POLICY_VALUE" }\n' \
-            > "${'$'}d/aether-webrtc-lock.json"
+            > "${'$'}d/tvavpn-webrtc-lock.json"
         done
-        echo "WebRTC lock applied. Restart the browser, then open http://aether.check/ to verify."
+        echo "WebRTC lock applied. Restart the browser, then open http://tvavpn.check/ to verify."
     """.trimIndent() + "\n"
 
     // ----------------------------------------------------------------- pages
     //
     // 1.4.0-r10: the setup page (`http://<phone>:10811/`) and the check page
-    // (`http://aether.check/`) were redesigned. What changed, and why:
+    // (`http://tvavpn.check/`) were redesigned. What changed, and why:
     //
     //  - One dark navy layout for both pages, readable on a phone, a laptop and a
     //    TV browser. Plain CSS with hex colours (no oklch, no grid tricks that old
@@ -182,9 +182,9 @@ object SharePages {
         val lead = when {
             !protected -> para(
                 "این صفحه رو مستقیم از گوشی باز کردی. یعنی دستگاهت به اشتراک می‌رسه، نه اینکه اینترنتش از " +
-                    "اشتراک رد می‌شه. پروکسی رو تنظیم کن و بعد ${code("http://aether.check/")} رو باز کن.",
+                    "اشتراک رد می‌شه. پروکسی رو تنظیم کن و بعد ${code("http://tvavpn.check/")} رو باز کن.",
                 "You opened the phone directly. That proves this device can reach the share, not that this " +
-                    "browser uses it. Set the proxy, then open ${code("http://aether.check/")}.",
+                    "browser uses it. Set the proxy, then open ${code("http://tvavpn.check/")}.",
                 "lead",
             )
             onDevice -> para(
@@ -301,14 +301,14 @@ object SharePages {
             <section aria-labelledby="s-test">
               ${h2("s-test", "تست نهایی", "Final check")}
               ${para(
-                "بعد از تنظیم پروکسی، ${code("http://aether.check/")} رو باز کن. این آدرس فقط وقتی باز می‌شه که " +
+                "بعد از تنظیم پروکسی، ${code("http://tvavpn.check/")} رو باز کن. این آدرس فقط وقتی باز می‌شه که " +
                     "واقعاً از اشتراک رد بشی؛ اگه باز نشد، پروکسی هنوز درست تنظیم نشده.",
-                "After setting the proxy, open ${code("http://aether.check/")}. It only loads when you really " +
+                "After setting the proxy, open ${code("http://tvavpn.check/")}. It only loads when you really " +
                     "go through the share; if it does not open, the proxy is not set yet.",
                 "sub",
               )}
               <p class="actions">
-                <a class="btn" href="http://${ShareLeakGuard.CHECK_HOST}/">${bi("باز کردن ${ltr("aether.check")}", "Open aether.check")}</a>
+                <a class="btn" href="http://${ShareLeakGuard.CHECK_HOST}/">${bi("باز کردن ${ltr("tvavpn.check")}", "Open tvavpn.check")}</a>
                 <a class="btn ghost" href="/check">${bi("تست دسترسی از همین‌جا", "Test reachability from here")}</a>
               </p>
             </section>
@@ -593,7 +593,7 @@ object SharePages {
         <div class="rows">
           ${lockRow(
             "Windows · Chrome, Edge, Brave",
-            PATH_WINDOWS, "aether-webrtc-lock.reg",
+            PATH_WINDOWS, "tvavpn-webrtc-lock.reg",
             "دوبار روش کلیک کن و ${ltr("Yes")} رو بزن.",
             "Double-click it and accept.",
           )}
@@ -607,15 +607,15 @@ object SharePages {
           )}
           ${lockRow(
             "macOS · Chrome, Edge, Brave",
-            PATH_MACOS, "aether-webrtc-lock-macos.sh",
-            "تو ترمینال بزن: ${code("sh aether-webrtc-lock-macos.sh")}",
-            "In Terminal: ${code("sh aether-webrtc-lock-macos.sh")}",
+            PATH_MACOS, "tvavpn-webrtc-lock-macos.sh",
+            "تو ترمینال بزن: ${code("sh tvavpn-webrtc-lock-macos.sh")}",
+            "In Terminal: ${code("sh tvavpn-webrtc-lock-macos.sh")}",
           )}
           ${lockRow(
             "Linux · Chrome, Chromium, Brave, Edge",
-            PATH_LINUX, "aether-webrtc-lock-linux.sh",
-            "تو ترمینال بزن: ${code("sudo sh aether-webrtc-lock-linux.sh")}",
-            "In a terminal: ${code("sudo sh aether-webrtc-lock-linux.sh")}",
+            PATH_LINUX, "tvavpn-webrtc-lock-linux.sh",
+            "تو ترمینال بزن: ${code("sudo sh tvavpn-webrtc-lock-linux.sh")}",
+            "In a terminal: ${code("sudo sh tvavpn-webrtc-lock-linux.sh")}",
           )}
         </div>
         ${para(
@@ -965,7 +965,7 @@ object SharePages {
               show('ok', 'WebRTC goes through the tunnel: it only sees the exit ' + exitTag + '.',
                 W + ' هم از تونل رد می‌شه و فقط آی‌پی خروجی ' + exitTag + ' رو می‌بینه.');
             } else {
-              show('warn', 'WebRTC reveals ' + ips(all) + '. If that is not the exit IP shown in Aether, it is a ' +
+              show('warn', 'WebRTC reveals ' + ips(all) + '. If that is not the exit IP shown in tvaVPN, it is a ' +
                 'leak: install the lock below.',
                 W + ' این آدرس رو نشون می‌ده: ' + ips(all) + '. اگه با آی‌پی خروجی توی برنامهٔ ' +
                 '<span class="ltr" dir="ltr">tvaVPN</span> یکی نیست، یعنی نشت داره؛ قفل پایین رو نصب کن.');

@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
 import android.provider.Settings
@@ -68,8 +70,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import studio.cluvex.aether.R
 import studio.cluvex.aether.core.AppLog
 import studio.cluvex.aether.core.GuardianPrefs
-import studio.cluvex.aether.core.MtuProbe
-import studio.cluvex.aether.custom.CustomConfigStore
 import studio.cluvex.aether.core.AccessToken
 import studio.cluvex.aether.core.ShareBridge
 import studio.cluvex.aether.core.SmartPlusPlan
@@ -214,16 +214,60 @@ fun SettingsHost(
     // command-line flags handed to a process that is already running.
     val editable = state is ConnectionState.Idle || state is ConnectionState.Error
 
+    // "ask AI" affordance on every row of every actual tunnel-settings page
+    // (1.5.7): BaseRow reads LocalAskAi and, whenever it is non-null, draws
+    // the small sparkle button itself - so every SettingsSwitchRow,
+    // SettingsChoiceRow, SettingsActionRow etc. on CONNECTION through ENGINE
+    // below gets it for free, with no change needed at any individual row's
+    // call site. Tapping it hands the row's own title to Gemini as a ready
+    // question and jumps straight to the chat - see TvaAiChatSession in
+    // TvaAiPage.kt, now internal so this file can prefill it. Scoped to only
+    // the pages that are genuine tunnel settings: Home, Appearance, About,
+    // Share, and the TVA AI pages themselves never provide it, so the icon
+    // never appears somewhere it would not make sense.
+    val context = LocalContext.current
+    // Same "tva_ai_settings" prefs file TvaAiSettingsPage itself reads/writes -
+    // see the "show_ask_ai_rows" switch there. Read directly (no `remember`
+    // around the boolean itself, only around the SharedPreferences instance):
+    // this whole function body re-runs on every navigation change, so turning
+    // the switch off and then opening any settings page immediately reflects
+    // it with nothing extra to wire up here.
+    val aiPrefs = remember(context) { context.getSharedPreferences("tva_ai_settings", Context.MODE_PRIVATE) }
+    val askAi: ((String) -> Unit)? = if (aiPrefs.getBoolean("show_ask_ai_rows", true)) {
+        { settingTitle ->
+            TvaAiChatSession.messageInput = context.getString(R.string.settings_ask_ai_prompt, settingTitle)
+            open(SettingsRoute.TVA_AI)
+        }
+    } else {
+        null
+    }
+
     when (route) {
         SettingsRoute.HOME -> SettingsHomePage(profile, editable, open, onProfileChange, onClose, modifier)
-        SettingsRoute.CONNECTION -> ConnectionPage(profile, editable, onProfileChange, back, modifier)
-        SettingsRoute.TRANSPORT -> TransportPage(profile, editable, onProfileChange, back, modifier)
-        SettingsRoute.DNS_ROUTING -> DnsRoutingPage(profile, editable, onProfileChange, back, modifier)
-        SettingsRoute.UPSTREAM -> UpstreamPage(profile, editable, onProfileChange, back, modifier)
-        SettingsRoute.ZERO_TRUST -> ZeroTrustPage(profile, editable, onProfileChange, back, modifier)
-        SettingsRoute.APPS -> AppsPage(profile, editable, onProfileChange, back, modifier)
-        SettingsRoute.SECURITY -> SecurityPage(profile, editable, onProfileChange, back, modifier)
-        SettingsRoute.ENGINE -> EnginePage(profile, editable, onProfileChange, back, modifier)
+        SettingsRoute.CONNECTION -> CompositionLocalProvider(LocalAskAi provides askAi) {
+            ConnectionPage(profile, editable, onProfileChange, back, modifier)
+        }
+        SettingsRoute.TRANSPORT -> CompositionLocalProvider(LocalAskAi provides askAi) {
+            TransportPage(profile, editable, onProfileChange, back, modifier)
+        }
+        SettingsRoute.DNS_ROUTING -> CompositionLocalProvider(LocalAskAi provides askAi) {
+            DnsRoutingPage(profile, editable, onProfileChange, back, modifier)
+        }
+        SettingsRoute.UPSTREAM -> CompositionLocalProvider(LocalAskAi provides askAi) {
+            UpstreamPage(profile, editable, onProfileChange, back, modifier)
+        }
+        SettingsRoute.ZERO_TRUST -> CompositionLocalProvider(LocalAskAi provides askAi) {
+            ZeroTrustPage(profile, editable, onProfileChange, back, modifier)
+        }
+        SettingsRoute.APPS -> CompositionLocalProvider(LocalAskAi provides askAi) {
+            AppsPage(profile, editable, onProfileChange, back, modifier)
+        }
+        SettingsRoute.SECURITY -> CompositionLocalProvider(LocalAskAi provides askAi) {
+            SecurityPage(profile, editable, onProfileChange, back, modifier)
+        }
+        SettingsRoute.ENGINE -> CompositionLocalProvider(LocalAskAi provides askAi) {
+            EnginePage(profile, editable, onProfileChange, back, modifier)
+        }
         SettingsRoute.APPEARANCE -> AppearancePage(back, modifier)
         SettingsRoute.CUSTOM_CONFIGS -> CustomConfigsPage(editable, back, modifier)
         SettingsRoute.BACKUP -> BackupPage(profile, editable, onProfileChange, back, modifier)
@@ -856,17 +900,6 @@ private fun TransportPage(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Automatic MTU detection (1.9.0): state for the button in the tuning group below.
-    //
-    // Hoisted here, not inside the SettingsScaffold content lambda below: that
-    // lambda is a plain `LazyListScope.() -> Unit` (same shape as LazyColumn's
-    // own content param), NOT a @Composable scope, so LocalContext.current,
-    // rememberCoroutineScope() and remember{} cannot be called directly inside
-    // it - only nested @Composable lambdas (settingsSection {}, item {}) can.
-    val mtuContext = LocalContext.current
-    val mtuScope = rememberCoroutineScope()
-    var mtuProbing by remember { mutableStateOf(false) }
-
     SettingsScaffold(
         stringResource(R.string.section_transport), onBack, modifier,
         icon = Icons.Rounded.Bolt, accent = AetherAmber, subtitle = stringResource(R.string.cat_transport_desc),
@@ -995,42 +1028,6 @@ private fun TransportPage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            RowDivider(inset = false)
-            SettingsActionRow(
-                title = stringResource(
-                    if (mtuProbing) R.string.mtu_auto_detect_running else R.string.mtu_auto_detect,
-                ),
-                summary = stringResource(R.string.mtu_auto_detect_desc),
-                icon = Icons.Rounded.Speed,
-                enabled = editable && !mtuProbing,
-                onClick = {
-                    mtuProbing = true
-                    mtuScope.launch {
-                        val target = CustomConfigStore.state.value.selection?.config
-                            ?.let { parseHostPort(it.server) }
-                            ?: (WARP_PROBE_HOST to WARP_PROBE_PORT)
-                        val result = MtuProbe.probe(target.first, target.second)
-                        mtuProbing = false
-                        when (result) {
-                            is MtuProbe.Result.Found -> {
-                                onProfileChange(profile.copy(mtu = result.mtu))
-                                Toast.makeText(
-                                    mtuContext,
-                                    mtuContext.getString(R.string.mtu_auto_detect_result, result.mtu),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            }
-                            is MtuProbe.Result.Failed -> {
-                                Toast.makeText(
-                                    mtuContext,
-                                    mtuContext.getString(R.string.mtu_auto_detect_failed, result.reason),
-                                    Toast.LENGTH_LONG,
-                                ).show()
-                            }
-                        }
-                    }
-                },
             )
         }
         GroupFooter(stringResource(R.string.mtu_desc))
@@ -1987,41 +1984,6 @@ private fun splitLabel(m: SplitMode): String = when (m) {
     SplitMode.INCLUDE -> stringResource(R.string.split_include)
     SplitMode.EXCLUDE -> stringResource(R.string.split_exclude)
 }
-
-/**
- * `"host:port"` or `"[host]:port"` (an IPv6 literal, bracketed - see
- * [studio.cluvex.aether.custom.ConfigParser.hostPort]) back into its two parts, for
- * the MTU auto-detect button: it needs somewhere to send probe packets, and a custom
- * config's own server is the path that actually matters when one is active. Returns
- * null for anything that doesn't parse, so the caller falls back to a generic target.
- */
-private fun parseHostPort(server: String): Pair<String, Int>? {
-    if (server.isBlank()) return null
-    val text = server.trim()
-    val (hostPart, portPart) = if (text.startsWith("[")) {
-        val close = text.indexOf(']')
-        if (close < 0) return null
-        text.substring(1, close) to text.substring(close + 1).removePrefix(":")
-    } else {
-        val colon = text.lastIndexOf(':')
-        if (colon < 0) return null
-        text.substring(0, colon) to text.substring(colon + 1)
-    }
-    val port = portPart.toIntOrNull() ?: return null
-    if (hostPart.isBlank() || port !in 1..65535) return null
-    return hostPart to port
-}
-
-/**
- * Generic probe target for the native Aether engine (WARP/MASQUE), used by MTU
- * auto-detect when no custom config is active: a documented public Cloudflare WARP
- * endpoint. The engine's own endpoint scanner picks the actual server it connects to
- * at connect time, which Kotlin never sees, so this is an approximation of that path
- * rather than the exact one - still representative, since every endpoint the engine
- * can pick comes from the same nearby Cloudflare network.
- */
-private const val WARP_PROBE_HOST = "162.159.192.1"
-private const val WARP_PROBE_PORT = 2408
 
 /** The (fragmentSize, fragmentDelay) pair each named [FragmentPreset] sets. [FragmentPreset.CUSTOM] has none - it is never set directly, only shown. */
 val FRAGMENT_PRESET_VALUES: Map<FragmentPreset, Pair<String, String>> = mapOf(

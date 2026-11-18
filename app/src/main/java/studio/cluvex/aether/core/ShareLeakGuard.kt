@@ -280,7 +280,7 @@ object ShareLeakGuard {
     """.trimIndent() + "\n"
 
     /** The magic host a client opens to check it is protected (plain HTTP). */
-    const val CHECK_HOST = "aether.check"
+    const val CHECK_HOST = "tvavpn.check"
 
     /**
      * 1.4.0-r6: the address [CHECK_HOST] resolves to when a shared device asks a

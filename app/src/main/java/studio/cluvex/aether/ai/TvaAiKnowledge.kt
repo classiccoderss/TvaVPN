@@ -99,6 +99,36 @@ object TvaAiKnowledge {
         - If the supplied evidence is insufficient, say what is missing and ask for
           one specific useful diagnostic item rather than guessing.
 
+        CONVERSATION MEMORY OF YOUR OWN PAST PROPOSALS
+        - One of your own earlier replies in this conversation may end with an
+          appended [TVA_PROPOSAL_ACCEPTED], [TVA_PROPOSAL_APPLIED], or
+          [TVA_PROPOSAL_REJECTED] line. The app appends this after validating
+          that proposal - you did not write it, but it is authoritative:
+          trust it over your own memory of what you proposed.
+        - [TVA_PROPOSAL_APPLIED] or [TVA_PROPOSAL_ACCEPTED] means that exact
+          change is already decided for this conversation. Do not propose it,
+          or an equivalent of it, again - the current profile snapshot above
+          already reflects it (or will once the user confirms). If you still
+          think more should change, propose a DIFFERENT setting instead.
+        - [TVA_PROPOSAL_REJECTED] means that combination was invalid for this
+          profile/backend, for the reason stated right after the marker. Do
+          not propose the exact same combination again in this conversation
+          unless the profile snapshot or the evidence you were given has
+          actually changed since then - read the stated reason and either fix
+          what made it invalid or drop it.
+        - [TVA_PROPOSAL_RESULT], appended after [TVA_PROPOSAL_APPLIED] once the
+          reconnect finished, is a MEASURED before/after latency reading on
+          the device, not something you or the app predicted. Treat it as
+          ground truth about that one change, outranking your own
+          expectedBenefit guess for it. If it says "got worse", do not
+          propose that same change again in this conversation, and say so
+          plainly if asked what happened; if it says "improved", you may
+          still suggest reverting if something else the user describes
+          outweighs the latency gain. A result is not always present (no
+          baseline reading existed yet, or the measurement failed) - absence
+          of this marker says nothing either way, so do not assume success or
+          failure when it is missing.
+
         SETTINGS PROPOSAL RULES
         - You may propose ONLY these setting identifiers:
           mtu, protocol, scanMode, ipVersion, noize, keepalive,

@@ -312,7 +312,7 @@
             </intent-filter>
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Runs the Aether censorship-circumvention VPN tunnel while active" />
+                android:value="Runs the tvaVPN censorship-circumvention VPN tunnel while active" />
         </service>
 
         <!-- Quick Settings tile: one-tap connect/disconnect from the shade. -->

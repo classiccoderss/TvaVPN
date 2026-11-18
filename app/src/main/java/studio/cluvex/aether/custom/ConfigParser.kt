@@ -827,6 +827,26 @@ object ConfigParser {
         } catch (e: IllegalArgumentException) {
             throw ConfigImportException(e.message ?: "npvt file could not be read")
         }
+        return parseDecodedNpvt(decoded, text, source, password, now)
+    }
+
+    /**
+     * Everything past "we have a [NpvtCodec.Decoded]" - shared by [parseNpvt]
+     * (the base64-text `.npvt`/`.npvs` LINK format) and [parseBytes] (the
+     * binary NPVS v5 FILE envelope, see [NpvsCodec]): both decrypt to the
+     * exact same `(version, servers-json, lock-json)` shape, so everything
+     * from here on - per-server lock checks, the V2Ray-only restriction,
+     * building the outbound - is identical regardless of which container the
+     * bytes came wrapped in. [text] is only used for the stored `raw` field,
+     * and is empty for the binary path, which has no text form to keep.
+     */
+    private fun parseDecodedNpvt(
+        decoded: NpvtCodec.Decoded,
+        text: String,
+        source: ConfigSource,
+        password: String?,
+        now: Long,
+    ): List<CustomConfig> {
         val servers = runCatching { json.parseToJsonElement(decoded.servers).jsonArray }.getOrNull()
             ?: throw ConfigImportException("npvt file could not be decrypted")
         val globalLock = runCatching { json.parseToJsonElement(decoded.lock).jsonObject }.getOrNull()
@@ -864,6 +884,37 @@ object ConfigParser {
         }
         if (out.isEmpty()) throw ConfigImportException(skipped ?: "the npvt file holds no servers")
         return out
+    }
+
+    /**
+     * Entry point for raw file BYTES (1.5.8) - as opposed to [parse], which
+     * takes text already decoded from a share link or pasted content. A
+     * binary NPVS v5 envelope (see [NpvsCodec]) must never pass through a
+     * text decoder first: it is encrypted binary, not base64, and converting
+     * it to a Kotlin String and back (as the old `.npvt`/`.npvs` link path
+     * does) can corrupt bytes that happen not to form valid UTF-8. Anything
+     * that is NOT that binary envelope - a plain `.npvt` file, a pasted
+     * `npvs://` link saved to a file, a stray BOM - still goes through
+     * [NpvtCodec.decodeFileText] and the normal [parse] exactly as before.
+     */
+    fun parseBytes(
+        bytes: ByteArray,
+        source: ConfigSource,
+        npvtTables: () -> NpvtCodec.Tables,
+        npvsTables: () -> NpvtCodec.Tables,
+        password: String? = null,
+        now: Long = System.currentTimeMillis(),
+    ): List<CustomConfig> {
+        require(bytes.size <= 2 * 1024 * 1024) { "config file is too large" }
+        if (!NpvtCodec.isBinary(bytes)) return parse(NpvtCodec.decodeFileText(bytes), source, npvtTables, password, now)
+        val decoded = try {
+            NpvsCodec.decode(bytes, npvsTables(), password)
+        } catch (e: NpvtPasswordException) {
+            throw e
+        } catch (e: IllegalArgumentException) {
+            throw ConfigImportException(e.message ?: "invalid NPVS file")
+        }
+        return parseDecodedNpvt(decoded, "", source, password, now)
     }
 
     /** The outbound of an npvt V2Ray server: its embedded Xray JSON when present, otherwise rebuilt from its fields. */

@@ -216,12 +216,34 @@ class AetherVpnService : VpnService() {
         // deliberately KEEPS the service alive with a blackhole TUN, so it needs a
         // foreground notification anyway. And it must never itself throw: a failure
         // to post the notification may not take the disconnect down with it.
-        promoteToForeground(
+        val foregroundOk = promoteToForeground(
             when (intent?.action) {
                 ACTION_DISCONNECT -> getString(R.string.state_disconnecting)
                 else -> getString(R.string.state_launching)
             },
         )
+        // 1.5.1 crash fix: every action BUT disconnect is about to either launch the
+        // engine or sit waiting for one, so it needs the foreground promotion above
+        // to have actually succeeded - without it, the framework kills this process
+        // in ~10s with ForegroundServiceDidNotStartInTimeException no matter what we
+        // do next (see the comment on promoteToForeground for how this is reached,
+        // e.g. the AI settings page's "Apply and reconnect now"). Bail out now,
+        // instantly and on purpose, instead of letting the system do it later: no
+        // engine ever starts, nothing leaks, and the user gets a clear error state
+        // next time they open the app instead of the app just vanishing.
+        // ACTION_DISCONNECT is exempt because it is handled below and already stops
+        // the service quickly either way, which cancels the same pending deadline.
+        if (!foregroundOk && intent?.action != ACTION_DISCONNECT) {
+            DiagnosticsLog.e(
+                TAG,
+                "Aborting ${intent?.action ?: "restart"}: startForeground was refused " +
+                    "(the service was not in an eligible state to show it right now).",
+            )
+            AetherController.setState(ConnectionState.Error(getString(R.string.fgs_start_blocked)))
+            RuntimeFlag.setWantConnected(applicationContext, false)
+            stopSelf()
+            return START_NOT_STICKY
+        }
         when (intent?.action) {
             ACTION_DISCONNECT -> {
                 cancelTaskRemovalRecovery()
@@ -232,11 +254,32 @@ class AetherVpnService : VpnService() {
                 // open a leak window. With strict mode on, the first
                 // disconnect engages lockdown instead; disconnecting FROM
                 // lockdown lifts it.
+                //
+                // 1.5.1: lockdown ONLY when the notification above actually posted.
+                // enterLockdown() keeps this service alive indefinitely on a
+                // blackhole TUN, which needs a confirmed foreground promotion just
+                // as much as a real session does (see the comment on
+                // promoteToForeground). Without one, staying alive is a guaranteed
+                // delayed kill -- and losing the process while "in lockdown" tears
+                // the blackhole TUN down too, which is the one thing strict mode
+                // must never do. Falling back to a clean stopEverything() loses the
+                // kill-switch guarantee for this disconnect, but a VPN interface
+                // that closes itself on purpose is still safer than one the system
+                // rips away mid-crash.
                 val last = lastProfile
                 when {
                     lockdownTunActive -> stopEverything()
-                    last != null && last.strictKillSwitch -> enterLockdown(last)
-                    else -> stopEverything()
+                    last != null && last.strictKillSwitch && foregroundOk -> enterLockdown(last)
+                    else -> {
+                        if (last != null && last.strictKillSwitch && !foregroundOk) {
+                            DiagnosticsLog.e(
+                                TAG,
+                                "Skipping kill-switch lockdown: the foreground notification did not " +
+                                    "post, so staying alive would only be killed later anyway.",
+                            )
+                        }
+                        stopEverything()
+                    }
                 }
                 return START_NOT_STICKY
             }
@@ -313,7 +356,7 @@ class AetherVpnService : VpnService() {
      * refreshes the notification, which is exactly what a repeat start request
      * needs. Also used by [AetherApp]'s crash handler as a last-ditch rescue.
      */
-    fun promoteToForeground(text: String) {
+    fun promoteToForeground(text: String): Boolean {
         lastNotifText = text
         try {
             startForeground(NOTIF_ID, buildNotification(text))
@@ -321,9 +364,26 @@ class AetherVpnService : VpnService() {
         } catch (t: Throwable) {
             // Anything here (a denied notification channel, an OEM restriction, a
             // start-not-allowed on Android 12+) must not turn into a second crash
-            // on top of the first problem. The tunnel logic below still runs.
-            DiagnosticsLog.w(TAG, "startForeground failed: ${t.javaClass.simpleName}: ${t.message}")
+            // on top of the first problem -- so this never rethrows.
+            //
+            // BUT swallowing it is not enough on its own (1.5.1 crash fix): when
+            // startForeground() is refused -- most commonly
+            // ForegroundServiceStartNotAllowedException, thrown when the OS decides
+            // this call did not happen from an eligible foreground/recent-interaction
+            // state (exactly what the AI "Apply and reconnect now" flow can hit: it
+            // calls connect() from a coroutine after awaiting up to 45s for the
+            // disconnect to finish, by which point the app may no longer be in an
+            // exempt state) -- the start request the framework is tracking is STILL
+            // unanswered. If the caller just carries on as if nothing happened, the
+            // engine runs for up to 10 more seconds and the framework then kills the
+            // process with ForegroundServiceDidNotStartInTimeException anyway - a
+            // worse, delayed crash instead of this one being handled immediately.
+            // Callers MUST check the return value and stop themselves instead of
+            // proceeding when it is false.
+            DiagnosticsLog.e(TAG, "startForeground failed: ${t.javaClass.simpleName}: ${t.message}")
+            foregroundActive = false
         }
+        return foregroundActive
     }
 
     /**
@@ -816,6 +876,51 @@ class AetherVpnService : VpnService() {
                 // Sampled on EVERY probe decision so the delta always covers the
                 // interval since the last one, success or failure.
                 val dataPathMoving = dataPathIsMoving()
+                // QUALITY SUPERVISION (1.5.11), carried over from the solo WARP
+                // watchdog's own copy of this exact check below: this chained
+                // session's ConnectionQuality badge was only ever reset at
+                // connect time and never updated again, so the UI's quality
+                // indicator went stale the moment the tunnel came up. And
+                // pipelineDead above only catches a pipeline that stopped
+                // answering probes at all - not one that is up, answering, and
+                // just consistently very slow, which never tripped a rebuild
+                // for a chained session the way it already did for the solo
+                // engine path. Same rule as there: only acts while the data
+                // path is idle, so an active transfer's own queueing latency
+                // is never mistaken for a dead route.
+                val freshPing = PingMonitor.pingOnce(viaTunnel = true)
+                if (freshPing) ConnectionQuality.record(PingMonitor.state.value)
+                if (freshPing && !dataPathMoving && GuardianPrefs.isMonitoringEnabled(applicationContext)) {
+                    val latency = PingMonitor.state.value.ms
+                    if (latency >= QUALITY_BAD_LATENCY_MS) {
+                        poorQualityCycles++
+                        DiagnosticsLog.w(
+                            TAG,
+                            "Quality monitor: severe ${profile.backend.pipelineLabel} latency " +
+                                "$latency ms ($poorQualityCycles/$QUALITY_BAD_CYCLES).",
+                        )
+                        if (poorQualityCycles >= QUALITY_BAD_CYCLES) {
+                            poorQualityCycles = 0
+                            if (GuardianPrefs.isQualityRecoveryEnabled(applicationContext)) {
+                                DiagnosticsLog.w(
+                                    TAG,
+                                    "Connection Guardian: sustained critical latency; rebuilding " +
+                                        "the ${profile.backend.pipelineLabel} session to recover the route.",
+                                )
+                                break
+                            } else {
+                                DiagnosticsLog.w(TAG, "Connection Guardian: critical latency detected; automatic quality recovery is disabled.")
+                            }
+                        }
+                    } else if (latency >= 0L) {
+                        if (poorQualityCycles > 0) {
+                            DiagnosticsLog.i(TAG, "Quality monitor: ${profile.backend.pipelineLabel} latency recovered to $latency ms.")
+                        }
+                        poorQualityCycles = 0
+                    }
+                } else if (dataPathMoving) {
+                    poorQualityCycles = 0
+                }
                 if (probeTunnelCycle(port)) {
                     if (pipelineDead > 0) {
                         DiagnosticsLog.i(

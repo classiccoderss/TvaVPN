@@ -4,6 +4,7 @@ import studio.cluvex.aether.ui.components.OptionMenu
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.role
 import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -123,6 +124,19 @@ import studio.cluvex.aether.ui.theme.OnDarkMuted
  * recognisable at a glance. Null falls back to the theme's primary.
  */
 val LocalSettingsAccent = compositionLocalOf<Color?> { null }
+
+/**
+ * Lets every row on a page ask Gemini about the exact setting it represents
+ * (1.5.7), with no change needed at any individual row's own call site:
+ * [BaseRow] reads this once and draws the small sparkle button for every
+ * [SettingsSwitchRow], [SettingsChoiceRow], [SettingsActionRow] and so on
+ * built on top of it, passing that row's own `title` back through the
+ * handler. Null (the default, same pattern as [LocalSettingsAccent]) hides
+ * the icon entirely - [SettingsHost] in SettingsScreen.kt provides a real
+ * handler only on pages that are genuine tunnel settings, never on Home,
+ * Appearance, About/Share, or the TVA AI pages themselves.
+ */
+val LocalAskAi = compositionLocalOf<((String) -> Unit)?> { null }
 
 /** Horizontal inset shared by every settings surface, so nothing is ragged. */
 private val PagePadding = 16.dp
@@ -441,8 +455,23 @@ private fun BaseRow(
                 style = MaterialTheme.typography.bodyLarge,
                 color = (titleColor ?: OnDark).copy(alpha = alpha),
             )
-            // 2: trailing slot - AI mark, then the row's own control
+            // 2: trailing slot - ask-AI sparkle (1.5.7, see LocalAskAi), then
+            // the row's own control
             Row(verticalAlignment = Alignment.CenterVertically) {
+                val askAi = LocalAskAi.current
+                if (askAi != null) {
+                    IconButton(
+                        onClick = { askAi(title) },
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.AutoAwesome,
+                            contentDescription = stringResource(R.string.settings_ask_ai_cd, title),
+                            tint = OnDarkMuted,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
                 trailing()
             }
             // 3: summary

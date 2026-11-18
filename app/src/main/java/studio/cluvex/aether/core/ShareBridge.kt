@@ -1583,5 +1583,5 @@ object ShareBridge {
     private const val SOCKS_REP_CMD_NOT_SUPPORTED = 0x07
 
     /** Default username; the real one comes from [setCredentials]. */
-    const val DEFAULT_USER = "aether"
+    const val DEFAULT_USER = "tvaVPN"
 }

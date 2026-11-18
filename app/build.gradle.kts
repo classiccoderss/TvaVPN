@@ -135,8 +135,8 @@ android {
         applicationId = "app.tvavpn.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 26
-        versionName = "1.8.0"
+        versionCode = 28
+        versionName = "1.8.2"
 
         ndk {
             // arm64 (primary), arm, and x86_64 for Chromebooks and emulators
@@ -422,6 +422,8 @@ dependencies {
     // (the JsonElement API only, so no serialization compiler plugin is needed),
     // and ZXing for QR codes - the camera scanner and decoding a QR from an image.
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    // Portable authenticated NPVS v5 decryption, including Android 26/27.
+    implementation("org.bouncycastle:bcprov-jdk18on:1.80")
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 

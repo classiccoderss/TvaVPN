@@ -44,6 +44,20 @@ sealed class AiProposalValidation {
  * field rejects the whole patch.
  */
 object AiProposalValidator {
+    /**
+     * Exposed (not private) so a caller such as
+     * [studio.cluvex.aether.ui.settings.TvaAiPage] can tell this specific
+     * rejection reason apart from every other one: this is the ONLY case
+     * where Gemini proposed something that is, after resolving it against the
+     * current profile, not actually a change at all - most often because the
+     * user (or an earlier turn in the same conversation) already applied it.
+     * It is not a mistake worth bothering the user with every time Gemini
+     * repeats it; it is a sign Gemini's own memory of the conversation needs
+     * a nudge (see the [TVA_PROPOSAL_ACCEPTED]/[TVA_PROPOSAL_APPLIED] markers
+     * TvaAiPage folds into conversation history for exactly that).
+     */
+    const val NO_OP_REASON = "تنظیمات پیشنهادی با وضعیت فعلی تفاوتی ندارد."
+
     private const val MAX_CHANGES = 3
     private const val MIN_AI_MTU = 1280
     private const val MAX_AI_MTU_WITHOUT_PROBE = 1500
@@ -181,7 +195,7 @@ object AiProposalValidator {
             if (updated.fastEndpointOnly != current.fastEndpointOnly) add("fastEndpointOnly")
         }
 
-        if (changed.isEmpty()) return AiProposalValidation.Rejected(listOf("تنظیمات پیشنهادی با وضعیت فعلی تفاوتی ندارد."))
+        if (changed.isEmpty()) return AiProposalValidation.Rejected(listOf(NO_OP_REASON))
         return AiProposalValidation.Accepted(updated, changed)
     }
 

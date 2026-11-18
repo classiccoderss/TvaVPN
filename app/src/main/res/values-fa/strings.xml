@@ -33,6 +33,7 @@
     <string name="state_connected">متصل</string>
     <string name="state_reconnecting">در حال اتصال مجدد…</string>
     <string name="state_disconnecting">در حال قطع…</string>
+    <string name="fgs_start_blocked">سرویس VPN همین الان اجازهٔ شروع نگرفت. لطفاً برنامه را دوباره باز کن و وصل شو.</string>
     <string name="state_error">اتصال ناموفق بود</string>
 
     <string name="tap_to_connect">برای اتصال امن لمس کنید</string>
@@ -377,6 +378,8 @@
     <string name="a11y_disconnect">قطع اتصال</string>
     <string name="a11y_cancel_connecting">لغو اتصال</string>
     <string name="a11y_back">بازگشت</string>
+    <string name="settings_ask_ai_cd">بپرس از هوش مصنوعی دربارهٔ %1$s</string>
+    <string name="settings_ask_ai_prompt">تنظیم «%1$s» رو توضیح بده: این چیه، چیکار می‌کنه، و من باید از چه مقداری استفاده کنم؟</string>
     <string name="a11y_show_password">نمایش رمز عبور</string>
     <string name="a11y_hide_password">پنهان کردن رمز عبور</string>
     <string name="a11y_show_value">نمایش مقدار</string>
@@ -477,11 +480,6 @@
     <!-- ورود آزاد MTU -->
     <string name="mtu_custom_label">یا خودتان ⁨MTU⁩ را وارد کنید</string>
     <string name="mtu_custom_help">هر مقداری بین ۱۲۸۰ و ۹۰۰۰. اگر تونل بالا است ولی بعضی سایت‌ها یا تلگرام باز نمی‌شوند، کمترش کنید.</string>
-    <string name="mtu_auto_detect">تشخیص خودکار MTU</string>
-    <string name="mtu_auto_detect_running">در حال تشخیص…</string>
-    <string name="mtu_auto_detect_desc">مسیر فعلی را بررسی و عدد بالا را پر می‌کند. تلاش بهترین‌ـ‌حالت است: روی اکثر شبکه‌ها کار می‌کند، ولی بعدش حتماً اتصالتان را چک کنید.</string>
-    <string name="mtu_auto_detect_result">MTU تشخیص داده‌شده: %1$d</string>
-    <string name="mtu_auto_detect_failed">تشخیص MTU ممکن نشد: %1$s</string>
     <string name="mtu_custom_range">عددی بین %1$d و %2$d وارد کنید.</string>
 
     <!-- راهنمای بهینه‌سازی باتری -->
@@ -854,6 +852,13 @@
     <string name="tva_ai_verified">اتصال تأیید شد</string>
     <string name="tva_ai_route_starting">در حال ارسال از طریق VPN متصل شما…</string>
     <string name="tva_ai_route_retrying">اتصال VPN ناپایدار بود. دوباره تلاش می‌شود…</string>
+    <string name="tva_ai_auto_apply_caption">اعمال پیشنهادها</string>
+    <string name="tva_ai_auto_apply_title">اعمال خودکار پیشنهاد</string>
+    <string name="tva_ai_auto_apply_desc">به‌محض رسیدن پیشنهاد، بدون پرسیدن اعمالش کن. اگر وصل باشی، تونل بلافاصله با تنظیمات جدید دوباره وصل می‌شود.</string>
+    <string name="tva_ai_auto_apply_footer">به‌طور پیش‌فرض خاموش است. وقتی روشن باشد، پنجرهٔ تأیید اصلاً نشان داده نمی‌شود - شامل هشدار اتصال مجدد - ولی بعد از اعمال هم می‌توانی از دکمهٔ واگرد روی هر پاسخ چت استفاده کنی.</string>
+    <string name="tva_ai_ask_ai_rows_caption">صفحات تنظیمات</string>
+    <string name="tva_ai_ask_ai_rows_title">نمایش «بپرس از AI» کنار ردیف‌های تنظیمات</string>
+    <string name="tva_ai_ask_ai_rows_desc">یک آیکون ✨ کوچیک کنار هر ردیف تو صفحات اتصال، ترنسپورت، DNS/روتینگ، آپ‌استریم، Zero Trust، اپ‌ها، امنیت و موتور، برای پرسیدن از جمینای دربارهٔ همون تنظیم. اگه تکراری به نظر می‌رسه، خاموشش کن.</string>
     <string name="tva_ai_route_notice">درخواست‌های TVA AI از همان اتصال اصلی VPN شما عبور می‌کنند، مثل بقیه ترافیک برنامه؛ مسیر جداگانه‌ای باز نمی‌شود. متن پرسش‌ها برای Gemini به گوگل ارسال می‌شود و تابع سهمیه و هزینه کلید API شماست.</string>
     <string name="tva_ai_vpn_not_connected">برای استفاده از TVA AI باید به VPN متصل باشی. ابتدا به VPN وصل شو و دوباره امتحان کن.</string>
     <string name="tva_ai_missing_key">ابتدا کلید API جمینای را وارد کن.</string>
@@ -877,6 +882,9 @@
     <string name="tva_ai_reconnecting">در حال اعمال تنظیمات و راه‌اندازی مجدد VPN…</string>
     <string name="tva_ai_reconnect_started">تنظیمات اعمال شدند. اتصال مجدد VPN شروع شد.</string>
     <string name="tva_ai_reconnect_timeout">قطع اتصال VPN به‌موقع کامل نشد. تنظیمات جدید ذخیره شدند، اما تونل فعال راه‌اندازی مجدد نشد.</string>
+    <string name="tva_ai_latency_improved">📶 نتیجه: تأخیر از %1$d به %2$d میلی‌ثانیه رسید — بهتر شد.</string>
+    <string name="tva_ai_latency_worse">📶 نتیجه: تأخیر از %1$d به %2$d میلی‌ثانیه رسید — بدتر شد.</string>
+    <string name="tva_ai_latency_unchanged">📶 نتیجه: تأخیر تقریباً تغییری نکرد (%1$d ← %2$d میلی‌ثانیه).</string>
     <string name="tva_ai_proposal_rejected">پیشنهاد توسط بررسی‌های ایمنی داخلی رد شد: %1$s</string>
     <string name="tva_ai_undo">بازگردانی تنظیمات قبلی</string>
     <string name="tva_ai_undo_done">تنظیمات قبلی بازگردانی شدند.</string>

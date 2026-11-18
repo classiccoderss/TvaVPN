@@ -150,6 +150,36 @@ object AiRedaction {
         }
     }
 
+    /** Hard cap on a full-log ATTACHMENT (separate budget from [MAX_DIGEST_CHARS] above). */
+    const val MAX_ATTACHMENT_CHARS = 100_000
+
+    /**
+     * The full redacted log - every line [studio.cluvex.aether.core.DiagnosticsLog]
+     * is still holding, not just the most recent 180 [digest] keeps - for
+     * sending as a genuine document ATTACHMENT rather than pasted into the chat
+     * text (1.5.6, "تشخیص خودکار..."/log-analysis follow-up: complex issues need
+     * more than a 180-line/12,000-char excerpt to diagnose).
+     *
+     * [digest] stays small on purpose: it is pasted inline into conversational
+     * text that gets truncated AGAIN downstream (twice, in
+     * [GeminiApiClient.chat]/[GeminiApiClient.optimize] and once more in
+     * [GeminiApiClient.baseRequest]), so there was never any point sending it
+     * more than that could survive. An attachment is its own request part with
+     * its own, much larger budget - see [GeminiApiClient.baseRequest]'s
+     * `attachmentText` - so it can afford to carry everything the buffer
+     * actually has (at most 800 lines; see `MAX_LINES` in
+     * [studio.cluvex.aether.core.DiagnosticsLog]) instead of only a fraction of
+     * it.
+     *
+     * Still bounded, and still from the TAIL for the same reason [digest] is:
+     * if that buffer is ever resized upward, this must not become an unbounded
+     * request body.
+     */
+    fun fullLogAttachment(fullLog: String, ownApiKey: String): String {
+        val cleaned = redactAll(fullLog, ownApiKey)
+        return if (cleaned.length <= MAX_ATTACHMENT_CHARS) cleaned else cleaned.takeLast(MAX_ATTACHMENT_CHARS)
+    }
+
     /**
      * Redacts EVERY line of [text], with no line cap and no length cap.
      *

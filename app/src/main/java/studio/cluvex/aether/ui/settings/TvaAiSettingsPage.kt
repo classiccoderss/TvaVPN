@@ -47,6 +47,7 @@ import studio.cluvex.aether.model.ConnectionState
 import studio.cluvex.aether.ui.theme.AetherError
 import studio.cluvex.aether.ui.theme.AetherMint
 import studio.cluvex.aether.ui.theme.AetherViolet
+import studio.cluvex.aether.ui.components.SegmentedSelector
 import studio.cluvex.aether.ui.theme.OnDarkMuted
 
 /**
@@ -102,6 +103,18 @@ fun TvaAiSettingsPage(
             prefs.edit().putString("gemini_model", it.value).apply()
         }
     }
+    // "auto_apply" is the same key TvaAiPage reads before applying a proposal -
+    // see KEY_AUTO_APPLY there. Written immediately on toggle, not behind the
+    // Save button above: a switch is its own confirmation, and gating it on
+    // Save would let someone flip it, back out without saving, and believe
+    // it is on when it is not.
+    var autoApply by remember { mutableStateOf(prefs.getBoolean("auto_apply", false)) }
+    // "show_ask_ai_rows" is the same key SettingsHost (SettingsScreen.kt) reads
+    // before wiring up the sparkle button on every settings row. Defaults to
+    // true (on) since that button is already the behavior those rows ship
+    // with; this is the off switch for someone who finds it repetitive, not
+    // an opt-in.
+    var showAskAiRows by remember { mutableStateOf(prefs.getBoolean("show_ask_ai_rows", true)) }
     var showKey by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var verifiedFingerprint by remember { mutableStateOf(prefs.getString("gemini_tested_fingerprint", null)) }
@@ -229,14 +242,27 @@ fun TvaAiSettingsPage(
                             }
                         },
                     )
-                    OutlinedTextField(
-                        value = model,
-                        onValueChange = { model = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.tva_ai_model)) },
-                        singleLine = true,
+                    // A closed list (1.5.10), like every other picker in the
+                    // app (SegmentedSelector - the same control the exit-
+                    // country and DNS-mode pickers use), not a free-text
+                    // field: these are exactly GeminiApiClient.DEFAULT_MODEL
+                    // and .FALLBACK_MODELS, the same names the fallback chain
+                    // itself already tries, so there is no longer a way to
+                    // type a model name that doesn't actually exist.
+                    val knownModels = remember {
+                        (listOf(GeminiApiClient.DEFAULT_MODEL) + GeminiApiClient.FALLBACK_MODELS).distinct()
+                    }
+                    Text(
+                        text = stringResource(R.string.tva_ai_model),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = OnDarkMuted,
+                    )
+                    SegmentedSelector(
+                        options = knownModels,
+                        selected = model.takeIf { it in knownModels } ?: knownModels.first(),
+                        onSelect = { model = it },
+                        label = { it },
                         enabled = !busy,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
@@ -293,6 +319,35 @@ fun TvaAiSettingsPage(
                         modifier = Modifier.semantics(mergeDescendants = true) {},
                     )
                 }
+            }
+        }
+        settingsSection {
+            GroupCaption(stringResource(R.string.tva_ai_auto_apply_caption))
+            SettingsGroup {
+                SettingsSwitchRow(
+                    title = stringResource(R.string.tva_ai_auto_apply_title),
+                    summary = stringResource(R.string.tva_ai_auto_apply_desc),
+                    checked = autoApply,
+                    onCheckedChange = {
+                        autoApply = it
+                        prefs.edit().putBoolean("auto_apply", it).apply()
+                    },
+                )
+            }
+            GroupFooter(stringResource(R.string.tva_ai_auto_apply_footer))
+        }
+        settingsSection {
+            GroupCaption(stringResource(R.string.tva_ai_ask_ai_rows_caption))
+            SettingsGroup {
+                SettingsSwitchRow(
+                    title = stringResource(R.string.tva_ai_ask_ai_rows_title),
+                    summary = stringResource(R.string.tva_ai_ask_ai_rows_desc),
+                    checked = showAskAiRows,
+                    onCheckedChange = {
+                        showAskAiRows = it
+                        prefs.edit().putBoolean("show_ask_ai_rows", it).apply()
+                    },
+                )
             }
         }
         settingsSection {

@@ -81,7 +81,29 @@ object IdentityVault {
             // shut down cleanly) or identical. Overwriting it with an older
             // sealed copy would roll the WARP identity back and force a
             // re-enrolment - the exact cost this class exists to avoid.
-            if (target.exists()) continue
+            //
+            // 1.5.12 CORRUPTION FIX: "newer" was trusted outright, with no
+            // check that it is actually readable. A real-world crash this
+            // caused: plain WireGuard mode (`--wg`) died instantly and
+            // identically on every attempt reading its identity file, with
+            // the engine's own "stream did not contain valid UTF-8" - the
+            // file had been left truncated by some earlier abrupt kill mid-
+            // write, and because it always "already existed", it was never
+            // once re-checked against the sealed backup; sealAndShred then
+            // re-sealed that same truncated file as the new backup after
+            // every failed attempt, so the corruption could never clear on
+            // its own. TOML is always valid UTF-8 text, so a cheap decode
+            // check catches exactly this shape of damage before it is
+            // trusted again.
+            if (target.exists()) {
+                if (target.readBytesOrNull()?.isValidEngineIdentity() == true) continue
+                DiagnosticsLog.w(
+                    TAG,
+                    "${target.name} on disk is not valid UTF-8 (likely truncated by an earlier " +
+                        "crash) - discarding it instead of trusting it again, so the sealed backup gets a chance.",
+                )
+                target.delete()
+            }
             val plain = KeyVault.open(blobFile.readBytesOrNull() ?: continue)
             if (plain == null) {
                 // Undecryptable: a keystore key that no longer exists (app data
@@ -90,6 +112,17 @@ object IdentityVault {
                 // behaviour - so drop the blob instead of keeping something we
                 // can never open again.
                 DiagnosticsLog.w(TAG, "Sealed identity ${blobFile.name} cannot be opened on this device - discarding it; the engine will re-provision.")
+                EncryptedLogFile.shred(blobFile)
+                continue
+            }
+            if (!plain.isValidEngineIdentity()) {
+                // The sealed backup itself decrypts to garbage - most likely
+                // sealed from an already-truncated plaintext before this
+                // check existed. Restoring it would just reproduce the exact
+                // crash this check exists to stop: drop it and let the engine
+                // provision a fresh identity, same as the unopenable-blob case
+                // just above.
+                DiagnosticsLog.w(TAG, "Sealed identity ${blobFile.name} decrypts to invalid data - discarding it; the engine will re-provision.")
                 EncryptedLogFile.shred(blobFile)
                 continue
             }
@@ -111,7 +144,20 @@ object IdentityVault {
         var sealed = 0
         var failed = 0
         for (file in plain) {
-            val blob = KeyVault.seal(file.readBytesOrNull() ?: continue)
+            val bytes = file.readBytesOrNull() ?: continue
+            if (!bytes.isValidEngineIdentity()) {
+                // 1.5.12: never persist a file in this state as the new
+                // backup - see the matching check in unsealInto, which is
+                // what this one actually prevents from ever being needed.
+                // An engine that is about to be reaped after leaving its
+                // identity file truncated has nothing here worth keeping;
+                // shredding it means the NEXT connect attempt provisions a
+                // clean identity instead of inheriting this one.
+                DiagnosticsLog.w(TAG, "${file.name} is not valid UTF-8 at shutdown - shredding it instead of sealing it as the new backup.")
+                EncryptedLogFile.shred(file)
+                continue
+            }
+            val blob = KeyVault.seal(bytes)
             if (blob == null) {
                 // No key: leaving the plaintext in place is strictly better than
                 // deleting the user's WARP identity, so we keep it and say so
@@ -179,4 +225,18 @@ object IdentityVault {
         }
 
     private fun File.readBytesOrNull(): ByteArray? = runCatching { readBytes() }.getOrNull()
+
+    /**
+     * True for non-empty, strictly valid UTF-8 (1.5.12) - what every engine
+     * identity file actually is (TOML text), and the exact property whose
+     * absence crashes the engine with "stream did not contain valid UTF-8"
+     * when it tries to read one. `decode(ByteBuffer)` (unlike
+     * `String(bytes, charset)`, which silently replaces bad bytes) throws on
+     * a malformed sequence, so this only passes bytes the engine itself
+     * would actually accept.
+     */
+    private fun ByteArray.isValidEngineIdentity(): Boolean =
+        isNotEmpty() && runCatching {
+            Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(this))
+        }.isSuccess
 }

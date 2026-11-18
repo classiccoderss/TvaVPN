@@ -33,11 +33,26 @@ object ConfigImporter {
     @Volatile
     private var cachedTables: NpvtCodec.Tables? = null
 
+    @Volatile
+    private var cachedGen2: NpvtCodec.Tables? = null
+
     /** The NapsternetV white-box tables, read once from `assets/npvt/wb.bin`. */
     fun tables(context: Context): NpvtCodec.Tables =
         cachedTables ?: synchronized(this) {
             cachedTables ?: context.assets.open("npvt/wb.bin").use { NpvtCodec.Tables.parse(it.readBytes()) }
                 .also { cachedTables = it }
+        }
+
+    /**
+     * The NPVS v5 "app key" tables (1.5.8), read once from
+     * `assets/npvs/gen2-wb.bin` - a SEPARATE set from [tables] above, not a
+     * duplicate: [NpvsCodec]'s method-2 (app-key, no password) unwrap derives
+     * its key from this generation-2 white box, never from the npvt one.
+     */
+    fun gen2Tables(context: Context): NpvtCodec.Tables =
+        cachedGen2 ?: synchronized(this) {
+            cachedGen2 ?: context.assets.open("npvs/gen2-wb.bin").use { NpvtCodec.Tables.parse(it.readBytes()) }
+                .also { cachedGen2 = it }
         }
 
     /**
@@ -72,7 +87,14 @@ object ConfigImporter {
                 val text = decodeQr(bytes) ?: throw ConfigImportException("no QR code found in the image")
                 return@withContext ConfigParser.parse(text, ConfigSource.QR, { tables(context) }, password)
             }
-            ConfigParser.parse(String(bytes, Charsets.UTF_8), ConfigSource.FILE, { tables(context) }, password)
+            // parseBytes (1.5.8), not a UTF-8 String() + the old text parse():
+            // a binary NPVS v5 envelope (see NpvsCodec) is encrypted bytes, not
+            // text, and round-tripping it through String(bytes, UTF_8) can
+            // corrupt it before ConfigParser ever sees it. parseBytes checks
+            // for that binary header itself and only falls back to the old
+            // text decoding for everything else, so this one call replaces
+            // the previous line with no change in behavior for non-NPVS files.
+            ConfigParser.parseBytes(bytes, ConfigSource.FILE, { tables(context) }, { gen2Tables(context) }, password)
         }
 
     /** An image holding a QR code (a screenshot, a photo of a screen, a saved picture). */

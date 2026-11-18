@@ -67,6 +67,8 @@ import studio.cluvex.aether.ai.AiSettingsProposal
 import studio.cluvex.aether.ai.GeminiApiClient
 import studio.cluvex.aether.core.AetherController
 import studio.cluvex.aether.core.DiagnosticsLog
+import studio.cluvex.aether.core.PingMonitor
+import studio.cluvex.aether.core.PingResult
 import studio.cluvex.aether.data.SecretStore
 import studio.cluvex.aether.model.ConnectionProfile
 import studio.cluvex.aether.model.ConnectionState
@@ -79,13 +81,87 @@ import studio.cluvex.aether.ui.theme.Navy950
 import studio.cluvex.aether.ui.theme.OnDark
 import studio.cluvex.aether.ui.theme.OnDarkMuted
 
-private data class TvaAiMessage(val fromUser: Boolean, val text: String)
+// internal, not private, 1.5.7: TvaAiChatSession.messages (below) is now
+// internal too, and a member cannot be more visible than its own type.
+internal data class TvaAiMessage(val fromUser: Boolean, val text: String)
+
+/**
+ * TVA AI conversation state, held in a plain singleton instead of this
+ * composable's own `remember` (1.5.3). `remember` is scoped to this
+ * composable staying in the navigation graph: leaving this screen (the gear
+ * icon to [TvaAiSettingsPage] and back, a rotation, backgrounding the app)
+ * tore it down, so every return to this page started from an empty chat even
+ * though nothing else about the app's state had reset.
+ *
+ * A singleton's members live exactly as long as the app's process does -
+ * nothing more, nothing less. That is exactly "cleared only when the app is
+ * actually closed": navigating within the app, or Android recreating this
+ * screen for any reason, never touches the process; only the app being fully
+ * closed (swiped from recents with no VPN tunnel left keeping the process
+ * alive - see [studio.cluvex.aether.vpn.AetherVpnService.onTaskRemoved] -
+ * force-stopped, or killed by the system to reclaim memory) does, and at
+ * that point every one of these fields is gone along with it, with nothing
+ * further to clean up here.
+ */
+// internal (not private), 1.5.7: SettingsScreen.kt's "ask AI" row button
+// prefills messageInput with a ready question from wherever a settings row
+// is, before navigating here - it needs this same instance, not a copy.
+internal object TvaAiChatSession {
+    val messages = mutableStateListOf<TvaAiMessage>()
+    val history = mutableStateListOf<GeminiApiClient.ChatTurn>()
+    var pendingProposal by mutableStateOf<AiSettingsProposal?>(null)
+    var pendingUpdatedProfile by mutableStateOf<ConnectionProfile?>(null)
+    var previousProfile by mutableStateOf<ConnectionProfile?>(null)
+    var reconnectOnUndo by mutableStateOf(false)
+    var messageInput by mutableStateOf("")
+}
 
 /** Total attempts for a Gemini call: the first try plus short-delay retries on a flaky main tunnel. */
 private const val MAX_ROUTE_ATTEMPTS = 3
 
 /** Brief pause before retrying a Gemini request over the same main-tunnel SOCKS port. */
 private const val ROUTE_RETRY_DELAY_MS = 1_200L
+
+/**
+ * SharedPreferences key for "apply suggestions automatically", toggled on
+ * [TvaAiSettingsPage]. Shared with this page as a plain string literal, the
+ * same way "gemini_model" already is - both files read the one
+ * "tva_ai_settings" prefs file.
+ */
+private const val KEY_AUTO_APPLY = "auto_apply"
+
+/**
+ * Markers folded into Gemini's OWN stored turn in [TvaAiChatSession.history]
+ * (1.5.4), never into the bubble the user sees in [TvaAiChatSession.messages]
+ * - these are conversation memory for the model, not a user-facing message.
+ * Without them, Gemini only had the fresh profile snapshot at the top of
+ * every request to infer what already happened from; that is enough once a
+ * change is genuinely applied (the snapshot just shows the new value), but
+ * it is NOT enough for a REJECTED proposal - Gemini never learned a given
+ * combination was invalid, so it could, and did, propose the exact same
+ * rejected combination again on the next turn, which read as a repeated/
+ * useless suggestion. Writing the outcome directly into the turn Gemini
+ * itself produced (and that gets sent straight back as its own prior turn on
+ * every later request) is the one place this information is guaranteed to
+ * still be in context, bounded history trimming aside. See
+ * [TvaAiKnowledge.systemInstruction] for the matching instruction telling
+ * Gemini how to read these.
+ */
+private const val PROPOSAL_ACCEPTED_MARKER = "[TVA_PROPOSAL_ACCEPTED]"
+private const val PROPOSAL_APPLIED_MARKER = "[TVA_PROPOSAL_APPLIED]"
+private const val PROPOSAL_REJECTED_MARKER = "[TVA_PROPOSAL_REJECTED]"
+
+/**
+ * Closes the loop [PROPOSAL_APPLIED_MARKER] on its own could not: that marker
+ * says a change was applied, not whether it actually helped. This one
+ * carries a measured before/after latency reading, folded onto the same
+ * history turn once [applyAndReconnect] finishes reconnecting - see
+ * [TvaAiKnowledge.systemInstruction] for how Gemini is told to read it.
+ */
+private const val PROPOSAL_RESULT_MARKER = "[TVA_PROPOSAL_RESULT]"
+
+/** Below this, a latency difference is just measurement noise, not a real before/after change. */
+private const val LATENCY_NOISE_FLOOR_MS = 15L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,14 +187,14 @@ fun TvaAiPage(
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("") }
     var statusIsError by remember { mutableStateOf(false) }
-    var pendingProposal by remember { mutableStateOf<AiSettingsProposal?>(null) }
-    var pendingUpdatedProfile by remember { mutableStateOf<ConnectionProfile?>(null) }
+    // showApplyDialog stays local, on purpose: it is "is the confirmation
+    // dialog open right now", not conversation content. Re-showing it on its
+    // own the moment someone comes back to this screen would be surprising;
+    // the pending proposal card below the chat (which DOES come from
+    // TvaAiChatSession) is still there either way for them to apply by hand.
     var showApplyDialog by remember { mutableStateOf(false) }
-    var previousProfile by remember { mutableStateOf<ConnectionProfile?>(null) }
-    var reconnectOnUndo by remember { mutableStateOf(false) }
-    var messageInput by remember { mutableStateOf("") }
-    val messages = remember { mutableStateListOf<TvaAiMessage>() }
-    val history = remember { mutableStateListOf<GeminiApiClient.ChatTurn>() }
+    val messages = TvaAiChatSession.messages
+    val history = TvaAiChatSession.history
     val listState = rememberLazyListState()
     val clipboard = LocalClipboardManager.current
 
@@ -175,6 +251,160 @@ fun TvaAiPage(
         throw requireNotNull(lastError)
     }
 
+    /**
+     * Upgrades the [PROPOSAL_ACCEPTED_MARKER] [sendPrompt] left on Gemini's own
+     * last turn to [PROPOSAL_APPLIED_MARKER], so the very next request already
+     * tells Gemini - in its own remembered words, not just inferred from a
+     * fresh profile snapshot - that this specific change is done, not merely
+     * pending. Only touches the LAST history turn, and only if it is still
+     * carrying the "accepted" marker; if something else happened in between
+     * (unlikely, since apply/auto-apply runs right after the proposal that
+     * produced it), this is a harmless no-op - the next profile snapshot
+     * reflects the applied value regardless.
+     */
+    fun markLastProposalApplied() {
+        val lastIndex = history.lastIndex
+        if (lastIndex < 0) return
+        val last = history[lastIndex]
+        if (!last.user && last.text.contains(PROPOSAL_ACCEPTED_MARKER)) {
+            history[lastIndex] = last.copy(text = last.text.replace(PROPOSAL_ACCEPTED_MARKER, PROPOSAL_APPLIED_MARKER))
+        }
+    }
+
+    fun applyWithoutReconnect() {
+        val updated = TvaAiChatSession.pendingUpdatedProfile ?: return
+        TvaAiChatSession.previousProfile = profile
+        TvaAiChatSession.reconnectOnUndo = false
+        onProfileChange(updated)
+        markLastProposalApplied()
+        TvaAiChatSession.pendingProposal = null
+        TvaAiChatSession.pendingUpdatedProfile = null
+        showApplyDialog = false
+        status = context.getString(R.string.tva_ai_applied_next_connect)
+        statusIsError = false
+    }
+
+    /**
+     * Appends a measured before/after latency reading to Gemini's own last
+     * turn in [TvaAiChatSession.history] (1.5.5), right after
+     * [markLastProposalApplied] already upgraded it to
+     * [PROPOSAL_APPLIED_MARKER] there - closing the loop [sendPrompt]'s own
+     * `expectedBenefit` text never did on its own: Gemini wrote what it
+     * EXPECTED, but nothing ever told it whether that actually happened. A
+     * later "بازم بهینه کن" in this same conversation now starts from what was
+     * actually measured last time, not just the profile snapshot and
+     * Gemini's own optimism about it.
+     */
+    fun appendLatencyResultToHistory(beforeMs: Long, afterMs: Long, delta: Long) {
+        val lastIndex = history.lastIndex
+        if (lastIndex < 0) return
+        val last = history[lastIndex]
+        if (last.user) return
+        val verdict = when {
+            delta <= -LATENCY_NOISE_FLOOR_MS -> "improved"
+            delta >= LATENCY_NOISE_FLOOR_MS -> "got worse"
+            else -> "about the same (within measurement noise)"
+        }
+        history[lastIndex] = last.copy(
+            text = last.text + "\n\n$PROPOSAL_RESULT_MARKER measured latency before=${beforeMs}ms after=${afterMs}ms ($verdict).",
+        )
+    }
+
+    /**
+     * Waits for the reconnect [applyAndReconnect] just started to actually
+     * reach [ConnectionState.Connected], takes one fresh latency reading on
+     * the new settings, and reports it against [beforePing] - the reading
+     * taken right before the old settings were torn down, so there is
+     * something honest to compare the new one with. Runs as its own
+     * independent coroutine (launched, never awaited, by [applyAndReconnect])
+     * and never touches [busy]: a connection can take a while to settle, and
+     * nothing else on this screen should wait on it.
+     *
+     * Silently does nothing - no message, no history note - whenever the
+     * comparison would not be meaningful: no baseline reading yet, the
+     * reconnect did not reach Connected within the wait, or the fresh probe
+     * itself failed. A missing result is simply not interesting enough to
+     * report; it is not treated as a proposal failure.
+     */
+    suspend fun measureAndRecordProposalResult(beforePing: PingResult) {
+        val before = beforePing.takeIf { !it.running && !it.error && it.ms >= 0 } ?: return
+        val connected = withTimeoutOrNull(30_000) {
+            AetherController.state.first { it is ConnectionState.Connected || it is ConnectionState.Error }
+        }
+        if (connected !is ConnectionState.Connected) return
+        // Short settle delay: Connected fires the moment the tunnel is up,
+        // slightly ahead of a probe through it being representative of
+        // steady-state rather than the handshake's own tail.
+        delay(1_500L)
+        if (!PingMonitor.pingOnce(viaTunnel = true)) return
+        val after = PingMonitor.state.value
+        if (after.error || after.ms < 0) return
+        val delta = after.ms - before.ms
+        val resultText = when {
+            delta <= -LATENCY_NOISE_FLOOR_MS -> context.getString(R.string.tva_ai_latency_improved, before.ms, after.ms)
+            delta >= LATENCY_NOISE_FLOOR_MS -> context.getString(R.string.tva_ai_latency_worse, before.ms, after.ms)
+            else -> context.getString(R.string.tva_ai_latency_unchanged, before.ms, after.ms)
+        }
+        messages.add(TvaAiMessage(fromUser = false, text = resultText))
+        appendLatencyResultToHistory(before.ms, after.ms, delta)
+    }
+
+    fun applyAndReconnect() {
+        val updated = TvaAiChatSession.pendingUpdatedProfile ?: return
+        TvaAiChatSession.previousProfile = profile
+        TvaAiChatSession.reconnectOnUndo = true
+        onProfileChange(updated)
+        markLastProposalApplied()
+        TvaAiChatSession.pendingProposal = null
+        TvaAiChatSession.pendingUpdatedProfile = null
+        showApplyDialog = false
+        busy = true
+        status = context.getString(R.string.tva_ai_reconnecting)
+        statusIsError = false
+        // Read BEFORE the disconnect below changes anything: this is the old
+        // settings' own latency, the one honest baseline to compare the new
+        // settings' reading against once reconnected.
+        val beforePing = PingMonitor.state.value
+        scope.launch {
+            try {
+                AetherController.disconnect(context)
+                val stopped = withTimeoutOrNull(45_000) {
+                    AetherController.state.first { it is ConnectionState.Idle || it is ConnectionState.Error }
+                    true
+                } ?: false
+                if (stopped) {
+                    AetherController.connect(context, updated)
+                    status = context.getString(R.string.tva_ai_reconnect_started)
+                    statusIsError = false
+                    scope.launch { measureAndRecordProposalResult(beforePing) }
+                } else {
+                    status = context.getString(R.string.tva_ai_reconnect_timeout)
+                    statusIsError = true
+                }
+            } catch (error: Exception) {
+                showError(error.message ?: context.getString(R.string.tva_ai_generic_error))
+            } finally {
+                busy = false
+            }
+        }
+    }
+
+    /**
+     * Applies the proposal [sendPrompt] just received immediately, skipping the
+     * confirmation dialog entirely - only when the person turned on "apply
+     * suggestions automatically" on [TvaAiSettingsPage]. Takes the same
+     * reconnect-or-not branch the dialog's own confirm button takes, so the
+     * dialog is simply never shown for an auto-applied proposal; a no-op
+     * (including when the last response carried no proposal, or the toggle is
+     * off) just leaves [pendingProposal] on screen for the person to apply by
+     * hand, exactly as before this setting existed.
+     */
+    fun autoApplyIfEnabled() {
+        if (!prefs.getBoolean(KEY_AUTO_APPLY, false)) return
+        if (TvaAiChatSession.pendingUpdatedProfile == null) return
+        if (state is ConnectionState.Connected) applyAndReconnect() else applyWithoutReconnect()
+    }
+
     fun sendPrompt(text: String, optimize: Boolean = false, logContext: String? = null) {
         val clean = text.trim()
         if (clean.isBlank() || busy) return
@@ -184,9 +414,9 @@ fun TvaAiPage(
         }
         messages.add(TvaAiMessage(fromUser = true, text = clean))
         history.add(GeminiApiClient.ChatTurn(user = true, text = clean))
-        messageInput = ""
-        pendingProposal = null
-        pendingUpdatedProfile = null
+        TvaAiChatSession.messageInput = ""
+        TvaAiChatSession.pendingProposal = null
+        TvaAiChatSession.pendingUpdatedProfile = null
         busy = true
         status = context.getString(R.string.tva_ai_route_starting)
         statusIsError = false
@@ -208,23 +438,46 @@ fun TvaAiPage(
                     }
                 }
                 messages.add(TvaAiMessage(fromUser = false, text = reply.text))
-                history.add(GeminiApiClient.ChatTurn(user = false, text = reply.text))
+                // historyText is what actually gets stored as Gemini's OWN turn
+                // below - starts as the plain reply, then gets a marker
+                // appended once the proposal (if any) is validated, so this
+                // one model turn carries both the natural-language reply the
+                // user saw and the outcome Gemini itself needs to remember.
+                var historyText = reply.text
                 if (reply.proposal != null) {
                     when (val validation = studio.cluvex.aether.ai.AiProposalValidator.validateAndApply(profile, reply.proposal)) {
                         is AiProposalValidation.Accepted -> {
-                            pendingProposal = reply.proposal
-                            pendingUpdatedProfile = validation.updatedProfile
+                            TvaAiChatSession.pendingProposal = reply.proposal
+                            TvaAiChatSession.pendingUpdatedProfile = validation.updatedProfile
+                            historyText += "\n\n$PROPOSAL_ACCEPTED_MARKER pending the user's confirmation to apply: " +
+                                validation.changedSettings.joinToString(", ") + "."
                         }
                         is AiProposalValidation.Rejected -> {
-                            messages.add(
-                                TvaAiMessage(
-                                    fromUser = false,
-                                    text = context.getString(R.string.tva_ai_proposal_rejected, validation.reasons.joinToString("؛ ")),
-                                ),
-                            )
+                            // The one rejection reason that is not a mistake worth
+                            // surfacing: the proposal, once resolved against the
+                            // current profile, was not actually a change (most
+                            // often because it, or something equivalent, was
+                            // already applied earlier in this same chat). Showing
+                            // that as an error every time Gemini repeats it is
+                            // exactly the "تکراری" annoyance this fix targets - the
+                            // history marker below is what actually stops the
+                            // repeat; no need to also show a message for it.
+                            val isNoOp = validation.reasons.singleOrNull() ==
+                                studio.cluvex.aether.ai.AiProposalValidator.NO_OP_REASON
+                            if (!isNoOp) {
+                                messages.add(
+                                    TvaAiMessage(
+                                        fromUser = false,
+                                        text = context.getString(R.string.tva_ai_proposal_rejected, validation.reasons.joinToString("؛ ")),
+                                    ),
+                                )
+                            }
+                            historyText += "\n\n$PROPOSAL_REJECTED_MARKER ${validation.reasons.joinToString("; ")} " +
+                                "— do not propose this exact same change again unless the profile snapshot or new evidence has actually changed."
                         }
                     }
                 }
+                history.add(GeminiApiClient.ChatTurn(user = false, text = historyText))
                 status = context.getString(R.string.tva_ai_response_received)
                 statusIsError = false
             } catch (error: Exception) {
@@ -234,14 +487,29 @@ fun TvaAiPage(
                 busy = false
                 if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
             }
+            // Outside the try/finally above, not inside it (1.5.2): this call may
+            // itself set busy=true and launch a second, separate coroutine for the
+            // apply/reconnect (see applyAndReconnect). Calling it before the
+            // finally block ran would have let that second busy=true be
+            // immediately stomped back to false by this coroutine's own
+            // `finally { busy = false }`, and the "response received" status line
+            // above would have overwritten whatever reconnecting status it set.
+            // Doing it after lets the automatic apply behave exactly like the
+            // manual button: its own busy/status, uninterrupted by this call.
+            autoApplyIfEnabled()
         }
     }
 
     fun analyzeLogs() {
-        val redacted = AiRedaction.digest(
+        // 1.5.6: the full buffered log (up to ~800 lines), redacted the same
+        // way, sent as a genuine attachment - not AiRedaction.digest's
+        // 180-line/12,000-char excerpt pasted into the chat text. See
+        // AiRedaction.fullLogAttachment and the matching GeminiApiClient
+        // comments for why this reaches Gemini whole now instead of in a
+        // fraction that used to get cut down twice more after this point.
+        val redacted = AiRedaction.fullLogAttachment(
             fullLog = DiagnosticsLog.exportText(),
             ownApiKey = apiKey,
-            maxLines = 180,
         )
         sendPrompt(
             text = context.getString(R.string.tva_ai_analyze_logs_prompt),
@@ -251,60 +519,14 @@ fun TvaAiPage(
     }
 
     fun beginApply() {
-        val proposal = pendingProposal ?: return
+        val proposal = TvaAiChatSession.pendingProposal ?: return
         val validation = studio.cluvex.aether.ai.AiProposalValidator.validateAndApply(profile, proposal)
         when (validation) {
             is AiProposalValidation.Accepted -> {
-                pendingUpdatedProfile = validation.updatedProfile
+                TvaAiChatSession.pendingUpdatedProfile = validation.updatedProfile
                 showApplyDialog = true
             }
             is AiProposalValidation.Rejected -> showError(validation.reasons.joinToString("؛ "))
-        }
-    }
-
-    fun applyWithoutReconnect() {
-        val updated = pendingUpdatedProfile ?: return
-        previousProfile = profile
-        reconnectOnUndo = false
-        onProfileChange(updated)
-        pendingProposal = null
-        pendingUpdatedProfile = null
-        showApplyDialog = false
-        status = context.getString(R.string.tva_ai_applied_next_connect)
-        statusIsError = false
-    }
-
-    fun applyAndReconnect() {
-        val updated = pendingUpdatedProfile ?: return
-        previousProfile = profile
-        reconnectOnUndo = true
-        onProfileChange(updated)
-        pendingProposal = null
-        pendingUpdatedProfile = null
-        showApplyDialog = false
-        busy = true
-        status = context.getString(R.string.tva_ai_reconnecting)
-        statusIsError = false
-        scope.launch {
-            try {
-                AetherController.disconnect(context)
-                val stopped = withTimeoutOrNull(45_000) {
-                    AetherController.state.first { it is ConnectionState.Idle || it is ConnectionState.Error }
-                    true
-                } ?: false
-                if (stopped) {
-                    AetherController.connect(context, updated)
-                    status = context.getString(R.string.tva_ai_reconnect_started)
-                    statusIsError = false
-                } else {
-                    status = context.getString(R.string.tva_ai_reconnect_timeout)
-                    statusIsError = true
-                }
-            } catch (error: Exception) {
-                showError(error.message ?: context.getString(R.string.tva_ai_generic_error))
-            } finally {
-                busy = false
-            }
         }
     }
 
@@ -381,16 +603,16 @@ fun TvaAiPage(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
-                        value = messageInput,
-                        onValueChange = { messageInput = it },
+                        value = TvaAiChatSession.messageInput,
+                        onValueChange = { TvaAiChatSession.messageInput = it },
                         modifier = Modifier.weight(1f),
                         label = { Text(stringResource(R.string.tva_ai_message_hint)) },
                         enabled = !busy,
                         maxLines = 4,
                     )
                     IconButton(
-                        onClick = { sendPrompt(messageInput) },
-                        enabled = !busy && messageInput.isNotBlank() && apiKey.isNotBlank(),
+                        onClick = { sendPrompt(TvaAiChatSession.messageInput) },
+                        enabled = !busy && TvaAiChatSession.messageInput.isNotBlank() && apiKey.isNotBlank(),
                         modifier = Modifier.size(52.dp).semantics {
                             contentDescription = context.getString(R.string.tva_ai_send)
                         },
@@ -500,7 +722,7 @@ fun TvaAiPage(
                 }
             }
 
-            val proposal = pendingProposal
+            val proposal = TvaAiChatSession.pendingProposal
             if (proposal != null) {
                 item {
                     ProposalCard(
@@ -523,13 +745,13 @@ fun TvaAiPage(
                     }
                 }
             }
-            previousProfile?.let { old ->
+            TvaAiChatSession.previousProfile?.let { old ->
                 item {
                     TextButton(onClick = {
                         onProfileChange(old)
-                        previousProfile = null
-                        if (reconnectOnUndo && state !is ConnectionState.Idle && state !is ConnectionState.Error) {
-                            reconnectOnUndo = false
+                        TvaAiChatSession.previousProfile = null
+                        if (TvaAiChatSession.reconnectOnUndo && state !is ConnectionState.Idle && state !is ConnectionState.Error) {
+                            TvaAiChatSession.reconnectOnUndo = false
                             busy = true
                             status = context.getString(R.string.tva_ai_reconnecting)
                             statusIsError = false
