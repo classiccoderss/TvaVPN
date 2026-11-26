@@ -1,5 +1,6 @@
 package studio.cluvex.aether.core
 
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -290,6 +291,19 @@ object DiagnosticsLog {
     }
 
     fun log(tag: String, level: LogLevel, message: String) {
+        // Mirror to logcat as well as the in-memory/on-disk log. The on-disk
+        // copy is sealed with a device key, so a field session could not be
+        // inspected over adb at all; this makes `adb logcat -s vpn engine ...`
+        // show exactly what the in-app panel shows, with no extra build.
+        runCatching {
+            val priority = when (level) {
+                LogLevel.DEBUG -> Log.DEBUG
+                LogLevel.INFO -> Log.INFO
+                LogLevel.WARN -> Log.WARN
+                LogLevel.ERROR -> Log.ERROR
+            }
+            Log.println(priority, tag.take(23), message)
+        }
         val line = LogLine(System.currentTimeMillis(), tag, level, message)
         // O(1) append + O(1) eviction, no list copies.
         synchronized(bufferLock) {

@@ -708,7 +708,7 @@ data class ConnectionProfile(
         if (!backend.usesWarp) {
             // Plain Tor: the resolvers still apply (they are what the engine's own
             // SOCKS front hands out), nothing else here does.
-            sanitizedDns().takeIf { it.isNotEmpty() }?.let {
+            tunnelDns().takeIf { it.isNotEmpty() }?.let {
                 args += "--dns"
                 args += it.joinToString(",")
             }
@@ -777,8 +777,9 @@ data class ConnectionProfile(
         // ---- engine v1.5.0 ----
 
         // In-tunnel resolvers. Sanitised so a malformed entry can never inject
-        // a second CLI token (the engine itself also re-validates each entry).
-        sanitizedDns().takeIf { it.isNotEmpty() }?.let {
+        // a second CLI token (the engine itself also re-validates each entry),
+        // and see [tunnelDns] for why a chained session sends none of them.
+        tunnelDns().takeIf { it.isNotEmpty() }?.let {
             args += "--dns"
             args += it.joinToString(",")
         }
@@ -1014,6 +1015,72 @@ data class ConnectionProfile(
         .filter { it.isNotEmpty() && DNS_ENTRY.matches(it) }
         .distinct()
         .take(MAX_DNS_SERVERS)
+
+    /**
+     * Resolvers the engine may use for lookups it makes INSIDE the tunnel, which
+     * is what `--dns` configures. Deliberately stricter than [sanitizedDns].
+     *
+     * ## A chained `tvaVPN -> Psiphon` session sends NONE of a custom list
+     *
+     * Field session, 1.8.3: the chain never came up on a healthy WARP tunnel.
+     * Stage 1 validated, then Psiphon reported
+     *
+     * ```
+     * [-] psiphon: failed to fetch common remote server list: ... Get "https://s3.amazonaws.com/...":
+     *     socks connect tcp [redacted]->s3.amazonaws.com:443: unknown error general SOCKS server failure
+     * ```
+     *
+     * and never reached a server. The engine was launched with the user's pasted
+     * resolver list, none of which answered from inside the tunnel, so EVERY name
+     * Psiphon asked its upstream proxy to dial failed after the engine spent its
+     * per-server budget on each of them. Nothing else was wrong: a direct SOCKS5
+     * CONNECT to a bare IP worked the whole time, and the same session with the
+     * engine's own resolvers connected in six seconds.
+     *
+     * Device DNS does not depend on this setting in that mode - the Psiphon front
+     * answers it (udpgw, then DNS-over-TCP/DoH) - so the only names the engine
+     * resolves are Psiphon's own dials, i.e. the one thing the whole chain depends
+     * on. They get the engine's defaults, which are public resolvers that answer
+     * from inside a WARP tunnel by construction.
+     *
+     * ## Only globally routable servers survive anywhere else
+     *
+     * The lookup happens inside the tunnel, so a loopback, LAN (192.168/10/172.16),
+     * link-local, multicast or carrier-grade-NAT resolver can never answer it: it
+     * is not reachable from the far side of the tunnel at all. Passing one only
+     * buys a full per-server timeout on every lookup, which on the field log made
+     * one web request take 25 seconds before it failed. Dropping them here costs
+     * the user nothing and is why a badly pasted list can no longer look like a
+     * "blocked" network.
+     */
+    fun tunnelDns(): List<String> =
+        if ((enginePsiphon || backend.usesExternal) && backend.usesWarp) {
+            emptyList()
+        } else {
+            sanitizedDns().filter { isPublicResolver(it) }
+        }
+
+    /** True when [entry] (`ip` or `ip:port`, already validated) is globally routable. */
+    private fun isPublicResolver(entry: String): Boolean {
+        val host = when {
+            entry.startsWith("[") -> entry.substringAfter('[').substringBefore(']')
+            entry.count { it == ':' } == 1 -> entry.substringBefore(':')
+            else -> entry
+        }
+        val address = runCatching { java.net.InetAddress.getByName(host) }.getOrNull() ?: return false
+        if (address.isAnyLocalAddress || address.isLoopbackAddress || address.isLinkLocalAddress ||
+            address.isMulticastAddress || address.isSiteLocalAddress
+        ) return false
+        val bytes = address.address
+        if (bytes.size == 4) {
+            val first = bytes[0].toInt() and 0xFF
+            val second = bytes[1].toInt() and 0xFF
+            // 0/8 ("this network"), 240/4 (reserved) and 100.64/10 (CGNAT).
+            if (first == 0 || first >= 240) return false
+            if (first == 100 && second in 64..127) return false
+        }
+        return true
+    }
 
     /**
      * Validated routing-rule list. Mirrors the grammar documented by the

@@ -946,6 +946,21 @@ class AetherVpnService : VpnService() {
         // PsiphonBootstrap for the field log this answers.
         withContext(Dispatchers.IO) { PsiphonBootstrap.prepare(this@AetherVpnService) }
 
+        // A custom resolver list is NOT handed to the engine in this mode. Device
+        // DNS is answered by the Psiphon front, so the only names the engine
+        // resolves are Psiphon's own dials - and a list that does not answer from
+        // inside the tunnel (a pasted "DNS shekan" block, a carrier resolver)
+        // fails every one of them with `general SOCKS server failure`, which is
+        // the "the chain never connects" report. See [ConnectionProfile.tunnelDns].
+        if (profile.backend.usesWarp && profile.sanitizedDns().isNotEmpty()) {
+            DiagnosticsLog.w(
+                TAG,
+                "Custom DNS is set but not used for ${profile.backend.pipelineLabel}: the engine " +
+                    "keeps its own public resolvers, because only those can be reached from inside " +
+                    "the tunnel and Psiphon's own dials depend on them.",
+            )
+        }
+
         val stageProfile: ConnectionProfile = connectAetherStage(profile)
 
         val transport = ExternalTransportFactory.create(this, profile) { engine?.isAlive() == true }

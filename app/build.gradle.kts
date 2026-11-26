@@ -139,8 +139,8 @@ android {
         // asked for 1.8.2), but versionCode has to move: the build currently
         // installed on the phone reports 30002 (a 30-based build), and Android
         // refuses to install over it with a lower code.
-        versionCode = 29
-        versionName = "1.8.3"
+        versionCode = 30
+        versionName = "1.8.4"
 
         ndk {
             // arm64-ONLY (requested): every device this app is actually
