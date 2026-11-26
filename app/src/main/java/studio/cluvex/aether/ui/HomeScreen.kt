@@ -1,0 +1,371 @@
+package studio.cluvex.aether.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.Chat
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import studio.cluvex.aether.R
+import studio.cluvex.aether.core.IpEndpoint
+import studio.cluvex.aether.model.ConnectionProfile
+import studio.cluvex.aether.model.ConnectionState
+import studio.cluvex.aether.model.isBusy
+import studio.cluvex.aether.model.isConnected
+import studio.cluvex.aether.ui.components.AmbientBackground
+import studio.cluvex.aether.ui.components.ButtonMode
+import studio.cluvex.aether.ui.components.ConnectButton
+import studio.cluvex.aether.ui.components.ConnectionDetails
+import studio.cluvex.aether.ui.components.ConnectionStatus
+import studio.cluvex.aether.ui.components.FitToHeight
+import studio.cluvex.aether.custom.ImportIntentBus
+import studio.cluvex.aether.ui.settings.RowDivider
+import studio.cluvex.aether.ui.settings.SettingsGroup
+import studio.cluvex.aether.ui.settings.SettingsHost
+import studio.cluvex.aether.ui.settings.SettingsNavRow
+import studio.cluvex.aether.ui.settings.SettingsRoute
+import studio.cluvex.aether.ui.theme.AetherAmber
+import studio.cluvex.aether.ui.theme.AetherBlue
+import studio.cluvex.aether.ui.theme.AetherGlowCyan
+import studio.cluvex.aether.ui.theme.AetherMint
+import studio.cluvex.aether.ui.theme.OnDarkMuted
+import studio.cluvex.aether.ui.theme.AetherViolet
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    state: ConnectionState,
+    profile: ConnectionProfile,
+    connectedSince: Long?,
+    ipInfo: IpEndpoint?,
+    ipLoading: Boolean,
+    onProfileChange: (ConnectionProfile) -> Unit,
+    onToggleConnection: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // UI-SPEED, and the single biggest win in this release: settings used to be a
+    // ModalBottomSheet holding a ~900-line, ~50-control card, AND the same card
+    // was a child of the navigation drawer. Now settings is its own screen and
+    // the home screen is DISPOSED while it is open, so the connect button, the
+    // connection card and its animated edge stop composing and animating
+    // entirely while the user is in settings - instead of running behind a sheet
+    // and competing for the same frame budget.
+    var settingsRoute by remember { mutableStateOf<SettingsRoute?>(null) }
+
+    // APP MENU (separate from Settings): the pages the drawer lists - TVA AI,
+    // Diagnostics, Share, About - are top-level app screens, not settings
+    // sub-pages. They used to be pushed onto SettingsHost's stack, which always
+    // starts at SettingsRoute.HOME, so backing out of TVA AI or Diagnostics
+    // landed in Settings instead of back on the home screen. They now have
+    // their own root and their own stack (see `fromMenu` in SettingsHost): back
+    // from the first page closes straight to the home screen.
+    var menuRoute by remember { mutableStateOf<SettingsRoute?>(null) }
+
+    // EXTERNAL IMPORT (tvaVPN): a config - or the user's own exported settings
+    // file, see ImportIntentBus.Payload.SettingsFileUri - was opened/shared into
+    // the app from outside (MainActivity posts it - see ImportIntentBus) and
+    // nothing else is currently open on top of the home screen, so jump
+    // straight to whichever page actually handles that payload; that page
+    // itself picks up and runs the actual import once it is composed. If the
+    // user is already elsewhere in Settings, leave them there - the import
+    // stays queued in ImportIntentBus until they reach the right page on
+    // their own.
+    val pendingImport by ImportIntentBus.pending.collectAsState()
+    LaunchedEffect(pendingImport) {
+        val payload = pendingImport
+        if (payload != null && settingsRoute == null && menuRoute == null) {
+            settingsRoute = if (payload is ImportIntentBus.Payload.SettingsFileUri) {
+                SettingsRoute.BACKUP
+            } else {
+                SettingsRoute.CUSTOM_CONFIGS
+            }
+        }
+    }
+
+    val openRoute = settingsRoute
+    if (openRoute != null) {
+        SettingsHost(
+            start = openRoute,
+            state = state,
+            profile = profile,
+            onProfileChange = onProfileChange,
+            onClose = { settingsRoute = null },
+            modifier = modifier,
+        )
+        return
+    }
+
+    // Drawer pages: same host, but rooted at the page itself - its back button
+    // and the system back gesture leave the app menu, never fall into Settings.
+    val openMenu = menuRoute
+    if (openMenu != null) {
+        SettingsHost(
+            start = openMenu,
+            fromMenu = true,
+            state = state,
+            profile = profile,
+            onProfileChange = onProfileChange,
+            onClose = { menuRoute = null },
+            modifier = modifier,
+        )
+        return
+    }
+
+    val mode = when {
+        state.isConnected -> ButtonMode.CONNECTED
+        state.isBusy -> ButtonMode.BUSY
+        state is ConnectionState.Error -> ButtonMode.ERROR
+        else -> ButtonMode.IDLE
+    }
+
+    val accent = when (mode) {
+        // Brand mint, the same accent the connection card and its animated edge
+        // use, so the whole screen reads as one palette.
+        ButtonMode.CONNECTED -> AetherMint
+        ButtonMode.ERROR -> Color(0xFFFF5C7A)
+        else -> Color(0xFF5B93FF)
+    }
+
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val drawerScope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            // The drawer is a MENU now, not a container for every panel in the
+            // app. It used to compose the diagnostics, share, advanced and about
+            // cards - all four, including the whole settings card - even while
+            // closed, which is why the first drawer swipe stuttered and why every
+            // engine log line recomposed something behind a panel nobody was
+            // looking at. Four rows cost nothing.
+            ModalDrawerSheet(
+                drawerContainerColor = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.fillMaxWidth(0.86f),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 20.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+
+                    Spacer(Modifier.height(22.dp))
+
+                    // Two destinations, two stacks: Settings opens at its home
+                    // page, every other row opens at itself with no Settings
+                    // page underneath it.
+                    val goSettings: (SettingsRoute) -> Unit = { route ->
+                        settingsRoute = route
+                        drawerScope.launch { drawerState.close() }
+                    }
+                    val goMenu: (SettingsRoute) -> Unit = { route ->
+                        menuRoute = route
+                        drawerScope.launch { drawerState.close() }
+                    }
+
+                    SettingsGroup {
+                        SettingsNavRow(
+                            title = stringResource(R.string.settings_title),
+                            summary = stringResource(R.string.settings_subtitle),
+                            icon = Icons.Rounded.Settings,
+                            iconTint = AetherBlue,
+                            onClick = { goSettings(SettingsRoute.HOME) },
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            title = stringResource(R.string.tva_ai_title),
+                            summary = stringResource(R.string.tva_ai_nav_desc),
+                            icon = Icons.Rounded.AutoAwesome,
+                            iconTint = AetherViolet,
+                            onClick = { goMenu(SettingsRoute.TVA_AI) },
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            title = stringResource(R.string.diag_title),
+                            summary = stringResource(R.string.diag_subtitle),
+                            icon = Icons.Rounded.BugReport,
+                            iconTint = AetherAmber,
+                            onClick = { goMenu(SettingsRoute.DIAGNOSTICS) },
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            title = stringResource(R.string.share_title),
+                            summary = stringResource(R.string.share_subtitle),
+                            icon = Icons.Rounded.Wifi,
+                            iconTint = AetherGlowCyan,
+                            onClick = { goMenu(SettingsRoute.SHARE) },
+                        )
+                        RowDivider()
+                        // UPDATE also lives in Settings, but checking for a new
+                        // build is a top-level thing people look for, not a
+                        // setting - so the menu lists it too, rooted at itself
+                        // (back returns here, not into Settings).
+                        SettingsNavRow(
+                            title = stringResource(R.string.update_title),
+                            summary = stringResource(R.string.update_nav_desc),
+                            icon = Icons.Rounded.SystemUpdate,
+                            iconTint = AetherMint,
+                            onClick = { goMenu(SettingsRoute.UPDATE) },
+                        )
+                        RowDivider()
+                        SettingsNavRow(
+                            title = stringResource(R.string.about_title),
+                            summary = stringResource(R.string.about_subtitle),
+                            icon = Icons.Rounded.Info,
+                            iconTint = OnDarkMuted,
+                            onClick = { goMenu(SettingsRoute.ABOUT) },
+                        )
+                    }
+                }
+            }
+        },
+    ) {
+        Box(modifier = modifier.fillMaxSize()) {
+            AmbientBackground(accent = accent, active = state.isConnected)
+
+            // NO SCROLLING ON THE HOME SCREEN, BY CONSTRUCTION.
+            //
+            // FitToHeight measures what the content naturally wants and, if the
+            // viewport is smaller, scales the whole subtree down by one factor
+            // until it fits, so everything stays on screen and nothing scrolls.
+            FitToHeight(
+                epochKey = state::class,
+                modifier = Modifier
+                    .fillMaxSize()
+                    // System bars are a physical size and must not shrink with the content.
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top,
+                ) {
+                    // Title bar: the menu button floats over its start edge.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    ConnectButton(
+                        mode = mode,
+                        onClick = onToggleConnection,
+                        stateText = stateTitle(state),
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+
+                    ConnectionStatus(
+                        connected = state.isConnected,
+                        statusTitle = stateTitle(state),
+                        statusCaption = stateSubtitle(state),
+                        connectedSince = connectedSince,
+                        error = state is ConnectionState.Error,
+                    )
+
+                    Spacer(Modifier.height(22.dp))
+
+                    ConnectionDetails(
+                        connected = state.isConnected,
+                        connectedSince = connectedSince,
+                        ipInfo = ipInfo,
+                        ipLoading = ipLoading,
+                        backend = profile.backend,
+                    )
+                }
+            }
+
+            IconButton(
+                onClick = { drawerScope.launch { drawerState.open() } },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Menu,
+                    contentDescription = stringResource(R.string.menu_open),
+                    tint = MaterialTheme.colorScheme.onBackground,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun stateTitle(state: ConnectionState): String = when (state) {
+    is ConnectionState.Idle -> stringResource(R.string.state_idle)
+    is ConnectionState.Launching -> stringResource(R.string.state_launching)
+    is ConnectionState.Connecting -> stringResource(R.string.state_connecting)
+    is ConnectionState.Verifying -> stringResource(R.string.state_verifying)
+    is ConnectionState.Connected -> stringResource(R.string.state_connected)
+    is ConnectionState.Reconnecting -> stringResource(R.string.state_reconnecting)
+    is ConnectionState.Disconnecting -> stringResource(R.string.state_disconnecting)
+    is ConnectionState.Error -> stringResource(R.string.state_error)
+}
+
+@Composable
+private fun stateSubtitle(state: ConnectionState): String = when (state) {
+    is ConnectionState.Idle -> stringResource(R.string.tap_to_connect)
+    // The exit IP + flag is shown inside the card, so keep the subtitle generic
+    // instead of leaking the internal 127.0.0.1:port address.
+    is ConnectionState.Connected -> stringResource(R.string.tap_to_disconnect)
+    is ConnectionState.Reconnecting ->
+        stringResource(R.string.reconnect_attempt, state.attempt, state.maxAttempts)
+    is ConnectionState.Error -> state.message
+    else -> stringResource(R.string.tap_to_disconnect)
+}
